@@ -14,7 +14,11 @@
 #ifdef ARDUINO_ARCH_AVR
 	#include <avr/drivers.h>
 #elif defined ARDUINO_ARCH_MEGAAVR
-	#include <megaAVR/drivers.h>
+	#if defined __AVR_TINY_2__
+		#include <megaTinyAVR/drivers.h>
+	#else
+		#include <megaAVR/drivers.h>
+	#endif	
 #elif defined ARDUINO_ARCH_STM32F1
 	#include <stm32f1/drivers.h>
 #elif defined ARDUINO_ARCH_STM32F4
@@ -62,7 +66,7 @@
 #endif
 extern nextCycle_t nextCycle;   // to be used in ISR for stepper and softled
 
-#define ISR_IDLETIME    5000        // max time between two Stepper/Softled ISRs ( µsec )
+#define ISR_IDLETIME    5000        // max time between two Stepper/Softled ISRs ( Âµsec )
 
 // old Class names ( for compatibility with former sketches )
 #define Stepper4    MoToStepper
@@ -81,7 +85,7 @@ extern nextCycle_t nextCycle;   // to be used in ISR for stepper and softled
 
 // internal defines
 
-#define TIMERPERIODE    20000   // Timer Overflow in µs
+#define TIMERPERIODE    20000   // Timer Overflow in Âµs
 //#define TIMER_OVL_TICS  ( TIMERPERIODE*TICS_PER_MICROSECOND )
 constexpr uint16_t TIMER_OVL_TICS = ( TIMERPERIODE*TICS_PER_MICROSECOND );
 
