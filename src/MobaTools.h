@@ -3,7 +3,7 @@
 /*
   MobaTools.h - a library for model makers - and others too ;-) 
   Author: Franz-Peter Müller, f-pm+gh@mailbox.org
-  Copyright (c) 2024 All rights reserved.
+  Copyright (c) 2025 All rights reserved.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,9 +19,12 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-  MobaTools V2.7.0
+  MobaTools V3.0.0
    
   History:
+  V3.0 x-2025
+  - Old compatibility method names no longer available
+  - Synced stepper movement with acceleration
   V2.7.1 x-2025
 	- RP204 processers: priority of timer IRQ can be set in MobaTools.h
   V2.7.0 3-2025
