@@ -197,6 +197,21 @@
         #define MODE_TP4  pinMode(TP4,OUTPUT ) 
         #define SET_TP4   gpio_set_mask( 1<<TP4 )
         #define CLR_TP4  gpio_clr_mask( 1<<TP4 )
+    
+    #elif defined (__AVR_TINY_2__)
+        #warning "Debug-Ports ATtiny active"
+        #define MODE_TP1 pinMode( PIN_PA5, OUTPUT )
+        #define SET_TP1 PORTA.OUTSET = PIN5_bm
+        #define CLR_TP1 PORTA.OUTCLR = PIN5_bm
+        #define MODE_TP2 pinMode( PIN_PA6, OUTPUT )
+        #define SET_TP2 PORTA.OUTSET = PIN6_bm
+        #define CLR_TP2 PORTA.OUTCLR = PIN6_bm
+        #define MODE_TP3
+        #define SET_TP3
+        #define CLR_TP3
+        #define MODE_TP4
+        #define SET_TP4
+        #define CLR_TP4
  
 	#else // processor not known
 		//#warning "no testpins - processor unknown"
