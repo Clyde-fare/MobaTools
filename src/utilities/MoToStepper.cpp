@@ -520,7 +520,8 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
                     startMove = 1;
                 #else
                     _stepperData.cycCnt         = MAX_JITTER;            // start with the next IRQ
-                    _stepperData.aCycSteps      = MIN_START_CYCLES;
+					_stepperData.aCycSteps 		= _stepperData.cyctXramplen / RAMPOFFSET ;	// create step after starttime of ramp
+                    if ( _stepperData.aCycSteps < MIN_START_CYCLES ) _stepperData.aCycSteps  = MIN_START_CYCLES;
 					#ifndef IS_32BIT
                     _stepperData.aCycRemain     = 0;  
 					#endif
@@ -563,7 +564,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 				startMove = 1;
             #else
 				_stepperData.cycCnt         = MAX_JITTER;            // start with the next IRQ
-				_stepperData.aCycSteps      = MIN_START_CYCLES;
+				_stepperData.aCycSteps      = _stepperData.tCycSteps; //MIN_START_CYCLES;
 				#ifndef IS_32BIT
 				_stepperData.aCycRemain     = 0; 
 				#endif
