@@ -71,6 +71,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     //SET_TP4;
     static const int DRAM_ATTR stepPattern[8] = {0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001,0b0001 };
     stepperData_t *stepperDataP;         // actual stepper data in IRQ
+	stepperSyncData_t *locSyncDataP;	 // Data for synchronous move ( =NULL if no sync move active )
     uint8_t spiChanged, changedPins, bitNr;
     //SET_TP1;SET_TP4; // Oszimessung Dauer der ISR-Routine
     spiChanged = false;
@@ -80,6 +81,8 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     stepperDataP = stepperRootP;
     // ---------------Stepper motors ---------------------------------------------
     while ( stepperDataP != NULL ) {
+		locSyncDataP = stepperDataP->syncDataP;	// Pointer to sync move data of this stepper ( =NULL if no sync move active)
+		
         #ifdef IS_32BIT
         bool resetPulse = false; // for 32Bit reset pulse und setting new pulse is never done in same IRQ
         if ( stepperDataP->output == A4988_PINS && digitalRead(stepperDataP->pins[0]) ) {
@@ -101,8 +104,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 		
         if ( stepperDataP->rampState >= rampStat::CRUISING &&  stepperDataP->speedZero != ZEROSPEEDACTIVE ) {
             // only active motors with speed > 0
-            //if ( stepperDataP->aCycSteps ) stepperDataP->cycCnt+=cyclesLastIRQ;
-            if ( stepperDataP->aCycSteps ) stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;
+            if ( stepperDataP->aCycSteps ) stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;  // using '+=' made some problems here ... ???
             #ifdef IS_32BIT
             if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps ) && !resetPulse ) {
                 //SET_TP2;
@@ -239,133 +241,161 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                         } else {    
                         stepperDataP->aCycSteps = ISR_IDLETIME;    // no more Interrupts for this stepper needed
                         stepperDataP->rampState = rampStat::STOPPED;
+						
                         //CLR_TP2;
                         }
                     }
+					stepperDataP->syncDataP = NULL;	// if it was a synchronos move
                 }
                 // --------------- compute nexte steplength ------------------------------------
-                //SET_TP2;
-                // ramp state machine
-                // !!! Auf ESP32 darf ein switch in ISR max 4 case-Blöcke enthalten !!!!
-                switch ( stepperDataP->rampState ) {
-                  case  rampStat::RAMPACCEL:
-                    // we are accelerating the motor
-                    if (stepperDataP->stepsInRamp >= stepperDataP->stepRampLen ) {
-                        // we reached the end of the ramp
-                        stepperDataP->aCycSteps = stepperDataP->tCycSteps;
-                        #ifndef IS_32BIT
-                        stepperDataP->aCycRemain = stepperDataP->tCycRemain;
-                        #endif
-                        stepperDataP->stepsInRamp = stepperDataP->stepRampLen;
-                        stepperDataP->rampState = rampStat::CRUISING;
-                    } else {
-                        stepperDataP->aCycSteps = stepperDataP->cyctXramplen / (stepperDataP->stepsInRamp + RAMPOFFSET) ;//+1;
-                        #ifndef IS_32BIT
-                        stepperDataP->aCycRemain += stepperDataP->cyctXramplen % (stepperDataP->stepsInRamp + RAMPOFFSET);
-                       if ( stepperDataP->aCycRemain > (stepperDataP->stepsInRamp + RAMPOFFSET) ) {
-                            stepperDataP->aCycSteps++;
-                            stepperDataP->aCycRemain -= (stepperDataP->stepsInRamp + RAMPOFFSET);
-                        }
-                        #endif
-                        // do we have to start deceleration ( remaining steps < steps in ramp so far )
-                        // Ramp must be same length in accelerating and decelerating!
-                        if ( stepperDataP->stepCnt <= ( stepperDataP->stepsInRamp+1U  ) ) {
-                            //CLR_TP2;
-                            stepperDataP->rampState = rampStat::RAMPDECEL;
-                            //DB_PRINT( "scnt=%ld, sIR=%u\n\r", stepperDataP->stepCnt, stepperDataP->stepsInRamp );
-                            //SET_TP2;
-                        } else {
-                            // still in ramp
-                            stepperDataP->stepsInRamp ++;
-                        }    
-                    }
-                    break;
-                  case rampStat::RAMPDECEL:
-                  case rampStat::SPEEDDECEL:
-                    if ( stepperDataP->stepsInRamp <= stepperDataP->stepRampLen ) {
-                        // we are stopping the motor
-                        if ( stepperDataP->stepCnt > (uint32_t)( stepperDataP->stepsInRamp ) ) {
-                            //CLR_TP2; // ToDo: check whether this in necessary ( schould be done in method that changes steps to  move)
-                            //steps to move has changed, accelerate again with next step
-                            stepperDataP->rampState = rampStat::RAMPACCEL;
-                            //DB_PRINT( "scnt=%ld, sIR=%u\n\r", stepperDataP->stepCnt, stepperDataP->stepsInRamp );
-                            //SET_TP2;
-                        }
-						// check if we can decrement steps in Ramp
- 						if ( stepperDataP->stepsInRamp > 0 ) --stepperDataP->stepsInRamp;
- 						#ifdef debugPrint
- 						//else stepperDataP->errorFlg = 1; // must not be reached!!
- 						#endif
-                         stepperDataP->aCycSteps = stepperDataP->cyctXramplen / ( stepperDataP->stepsInRamp + RAMPOFFSET ) ;// +1 ;
-                          #ifndef IS_32BIT
-                        stepperDataP->aCycRemain += stepperDataP->cyctXramplen % (stepperDataP->stepsInRamp + RAMPOFFSET);
-                        if ( stepperDataP->aCycRemain > (stepperDataP->stepsInRamp + RAMPOFFSET) ) {
-                            stepperDataP->aCycSteps++;
-                            stepperDataP->aCycRemain -= (stepperDataP->stepsInRamp + RAMPOFFSET);
-                        }
-                        #endif
-                    } else {
-                        // lower speed to new value 
-                        if ( (stepperDataP->stepsInRamp-stepperDataP->stepRampLen) > stepperDataP->deltaSteps ) {
-                            // steps in ramp still greater than delta
-                            stepperDataP->stepsInRamp -=stepperDataP->deltaSteps;
-                            stepperDataP->aCycSteps = stepperDataP->cyctXramplen / ( stepperDataP->stepsInRamp + RAMPOFFSET ) ;//+1 ;
-                            #ifndef IS_32BIT
-                            stepperDataP->aCycRemain += stepperDataP->cyctXramplen % (stepperDataP->stepsInRamp + RAMPOFFSET);
-                            if ( stepperDataP->aCycRemain > (stepperDataP->stepsInRamp + RAMPOFFSET) ) {
-                                stepperDataP->aCycSteps++;
-                                stepperDataP->aCycRemain -= (stepperDataP->stepsInRamp + RAMPOFFSET);
-                            }
-                            #endif
-                        } else {
-                            // new targetspeed reached
-                            //SET_TP2;
-                            stepperDataP->rampState = rampStat::CRUISING;
-                            stepperDataP->stepsInRamp =  stepperDataP->stepRampLen;
-                            stepperDataP->aCycSteps = stepperDataP->tCycSteps;
-                            #ifndef IS_32BIT
-                            stepperDataP->aCycRemain = 0;
-                            #endif
-							if ( stepperDataP->speedZero == DECELSPEEDZERO ) {
-								//target speed was 0, create no more steps
-								stepperDataP->speedZero = ZEROSPEEDACTIVE;
-								// if enabe is active, start Time until disabling the motor
-								if (stepperDataP->enableOn) {
-									// enable is active, wait for disabling
-									stepperDataP->aCycSteps = stepperDataP->cycDelay;
-									stepperDataP->rampState = rampStat::STOPPING;
-								}   
+				// --------------- This is not done on slave steppers ins sync moves ------------
+				if ( stepperDataP->rampState != rampStat::SYNCSLAVE ) {
+					//SET_TP2;
+					// ramp state machine
+					// !!! Auf ESP32 darf ein switch in ISR max 4 case-Blöcke enthalten !!!!
+					switch ( stepperDataP->rampState ) {
+					  case  rampStat::RAMPACCEL:
+						// we are accelerating the motor
+						if (stepperDataP->stepsInRamp >= stepperDataP->stepRampLen ) {
+							// we reached the end of the ramp
+							stepperDataP->aCycSteps = stepperDataP->tCycSteps;
+							#ifndef IS_32BIT
+							stepperDataP->aCycRemain = stepperDataP->tCycRemain;
+							#endif
+							stepperDataP->stepsInRamp = stepperDataP->stepRampLen;
+							stepperDataP->rampState = rampStat::CRUISING;
+						} else {
+							stepperDataP->aCycSteps = stepperDataP->cyctXramplen / (stepperDataP->stepsInRamp + RAMPOFFSET) ;//+1;
+							#ifndef IS_32BIT
+							stepperDataP->aCycRemain += stepperDataP->cyctXramplen % (stepperDataP->stepsInRamp + RAMPOFFSET);
+						   if ( stepperDataP->aCycRemain > (stepperDataP->stepsInRamp + RAMPOFFSET) ) {
+								stepperDataP->aCycSteps++;
+								stepperDataP->aCycRemain -= (stepperDataP->stepsInRamp + RAMPOFFSET);
 							}
-                            //CLR_TP2;
-                        }
-                    }
-                    break;
-                    
-                  case rampStat::CRUISING:
-                    // Not in ramp, targetspeed reached - or without ramp at all
-                    //CLR_TP2;
-                    stepperDataP->aCycSteps = stepperDataP->tCycSteps;
-                    #ifndef IS_32BIT
-                    stepperDataP->aCycRemain += stepperDataP->tCycRemain;
-                    if  ( stepperDataP->aCycRemain > CYCLETIME ) {
-                        stepperDataP->aCycRemain -= CYCLETIME;
-                        stepperDataP->aCycSteps++;
-                    }
-                    #endif
-                    // do we have to start the deceleration
-                    if ( stepperDataP->stepCnt <= stepperDataP->stepRampLen+1U && stepperDataP->stepRampLen != 0 ) {
-                        // in mode without ramp ( stepRampLen == 0 ) , this can never be true
-						// V2.6.2 - added explicit check of ramplen to be 0
-                        stepperDataP->rampState = rampStat::RAMPDECEL;
-                    }
-                    
-                    break;
-                    
-                  default:
-                    //stepper does not move -> nothing to do
-                    //CLR_TP2;
-                    break;
-                } // End of ramp-statemachine
+							#endif
+							// do we have to start deceleration ( remaining steps < steps in ramp so far )
+							// Ramp must be same length in accelerating and decelerating!
+							if ( stepperDataP->stepCnt <= ( stepperDataP->stepsInRamp+1U  ) ) {
+								//CLR_TP2;
+								stepperDataP->rampState = rampStat::RAMPDECEL;
+								//DB_PRINT( "scnt=%ld, sIR=%u\n\r", stepperDataP->stepCnt, stepperDataP->stepsInRamp );
+								//SET_TP2;
+							} else {
+								// still in ramp
+								stepperDataP->stepsInRamp ++;
+							}    
+						}
+						break;
+					  case rampStat::RAMPDECEL:
+					  case rampStat::SPEEDDECEL:
+						if ( stepperDataP->stepsInRamp <= stepperDataP->stepRampLen ) {
+							// we are stopping the motor
+							if ( stepperDataP->stepCnt > (uint32_t)( stepperDataP->stepsInRamp ) ) {
+								//CLR_TP2; // ToDo: check whether this in necessary ( schould be done in method that changes steps to  move)
+								//steps to move has changed, accelerate again with next step
+								stepperDataP->rampState = rampStat::RAMPACCEL;
+								//DB_PRINT( "scnt=%ld, sIR=%u\n\r", stepperDataP->stepCnt, stepperDataP->stepsInRamp );
+								//SET_TP2;
+							}
+							// check if we can decrement steps in Ramp
+							if ( stepperDataP->stepsInRamp > 0 ) --stepperDataP->stepsInRamp;
+							#ifdef debugPrint
+							//else stepperDataP->errorFlg = 1; // must not be reached!!
+							#endif
+							 stepperDataP->aCycSteps = stepperDataP->cyctXramplen / ( stepperDataP->stepsInRamp + RAMPOFFSET ) ;// +1 ;
+							  #ifndef IS_32BIT
+							stepperDataP->aCycRemain += stepperDataP->cyctXramplen % (stepperDataP->stepsInRamp + RAMPOFFSET);
+							if ( stepperDataP->aCycRemain > (stepperDataP->stepsInRamp + RAMPOFFSET) ) {
+								stepperDataP->aCycSteps++;
+								stepperDataP->aCycRemain -= (stepperDataP->stepsInRamp + RAMPOFFSET);
+							}
+							#endif
+						} else {
+							// lower speed to new value 
+							if ( (stepperDataP->stepsInRamp-stepperDataP->stepRampLen) > stepperDataP->deltaSteps ) {
+								// steps in ramp still greater than delta
+								stepperDataP->stepsInRamp -=stepperDataP->deltaSteps;
+								stepperDataP->aCycSteps = stepperDataP->cyctXramplen / ( stepperDataP->stepsInRamp + RAMPOFFSET ) ;//+1 ;
+								#ifndef IS_32BIT
+								stepperDataP->aCycRemain += stepperDataP->cyctXramplen % (stepperDataP->stepsInRamp + RAMPOFFSET);
+								if ( stepperDataP->aCycRemain > (stepperDataP->stepsInRamp + RAMPOFFSET) ) {
+									stepperDataP->aCycSteps++;
+									stepperDataP->aCycRemain -= (stepperDataP->stepsInRamp + RAMPOFFSET);
+								}
+								#endif
+							} else {
+								// new targetspeed reached
+								//SET_TP2;
+								stepperDataP->rampState = rampStat::CRUISING;
+								stepperDataP->stepsInRamp =  stepperDataP->stepRampLen;
+								stepperDataP->aCycSteps = stepperDataP->tCycSteps;
+								#ifndef IS_32BIT
+								stepperDataP->aCycRemain = 0;
+								#endif
+								if ( stepperDataP->speedZero == DECELSPEEDZERO ) {
+									//target speed was 0, create no more steps
+									stepperDataP->speedZero = ZEROSPEEDACTIVE;
+									// if enabe is active, start Time until disabling the motor
+									if (stepperDataP->enableOn) {
+										// enable is active, wait for disabling
+										stepperDataP->aCycSteps = stepperDataP->cycDelay;
+										stepperDataP->rampState = rampStat::STOPPING;
+									}   
+								}
+								//CLR_TP2;
+							}
+						}
+						break;
+						
+					  case rampStat::CRUISING:
+						// Not in ramp, targetspeed reached - or without ramp at all
+						//CLR_TP2;
+						stepperDataP->aCycSteps = stepperDataP->tCycSteps;
+						#ifndef IS_32BIT
+						stepperDataP->aCycRemain += stepperDataP->tCycRemain;
+						if  ( stepperDataP->aCycRemain > CYCLETIME ) {
+							stepperDataP->aCycRemain -= CYCLETIME;
+							stepperDataP->aCycSteps++;
+						}
+						#endif
+						// do we have to start the deceleration
+						if ( stepperDataP->stepCnt <= stepperDataP->stepRampLen+1U && stepperDataP->stepRampLen != 0 ) {
+							// in mode without ramp ( stepRampLen == 0 ) , this can never be true
+							// V2.6.2 - added explicit check of ramplen to be 0
+							stepperDataP->rampState = rampStat::RAMPDECEL;
+						}
+						
+						break;
+						
+					  default:
+						//stepper does not move -> nothing to do
+						//CLR_TP2;
+						break;
+					} // End of ramp-statemachine
+					// Check if it is a master in a synced move, if true check if a slave step is due
+					if ( locSyncDataP != NULL ) {
+						// we are in a synced move and it's not a slave -> must be the master
+						// loop through all steppers of the synced move and check if a step is due
+						stepperSyncData_t *slavePtr = locSyncDataP->nextSyncData;
+						while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
+							slavePtr->ratioCnt -= RATIOBASE; 
+							if ( slavePtr->ratioCnt < RATIOBASE ) {
+								// slave step is due
+								uintxx_t slaveStep = stepperDataP->aCycSteps * slavePtr->ratioCnt/RATIOBASE;
+								if (slaveStep < MIN_STEP_CYCLE ) slaveStep = MIN_STEP_CYCLE;
+								nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
+								slavePtr->stepperDataP->aCycSteps = slaveStep;
+								//Reset ratio counter for slave
+								slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
+							}
+							slavePtr = slavePtr->nextSyncData; // Check next stepper until we reach our own ptr
+						}
+					}
+				} else { // ----------- End of check if not a SLAVE ---------------------------
+					// it is a slave and did one step
+					// set aCycSteps to max, so that no step is generated, until master sets aCycSteps again
+					stepperDataP->aCycSteps = UINT_MAX;
+				}
                 //CLR_TP2;
             } // End of do one step
 			//CLR_TP2;

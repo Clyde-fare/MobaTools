@@ -53,17 +53,37 @@ constexpr uint16_t CYCLETICS   =  (CYCLETIME*TICS_PER_MICROSECOND);
 
 /////////////////////////////////////////////////////////////////////////////////
 // global stepper data ( used in ISR )
-enum class rampStat:byte { INACTIVE, STOPPED, SPEED0, STOPPING, STARTING, CRUISING, LASTSTEP, RAMPACCEL, RAMPDECEL, SPEEDDECEL  };
+enum class rampStat:byte { INACTIVE, STOPPED, SPEED0, STOPPING, STARTING, CRUISING, LASTSTEP, RAMPACCEL, RAMPDECEL, SPEEDDECEL, SYNCSLAVE  };
 /*
 // states from CRUISING and above mean that the motor is moving
-// STOPPING: Motor does not move - waiting for disabling the motor.
-// SPEED0:	 motor is stopped because speed is set to 0, target is not yet reached ( esp. for ESP8266 )
-// STARTING: motor does not yet move, waiting time after enable
+// STOPPING:	Motor does not move - waiting for disabling the motor.
+// SPEED0:		motor is stopped because speed is set to 0, target is not yet reached ( esp. for ESP8266 )
+// STARTING:	motor does not yet move, waiting time after enable
+// SYNCSLAVE:	Motor runs in slave mode of a synced movement. It does NOT compute the time for the next step by itself.
+//				This is done by the master-stepper for all slaves. But it resets its ‘ratio counter’ to the master-stepper 
+//				when a step has been executed.
 */
+
+#define RATIOBASE 1000U		// Base of speed ratio between master and slaves. Because slave are always slower the master
+							// the ratio is always greater than RATIOBASE
+// all steppers that will run in sync are connected via a circular pointerchain.
+struct stepperSyncData_t {			// this is a circular chain of steppers in sync
+	// per steppper data needed for synchronos move of steppers
+	struct stepperSyncData_t *nextSyncData;	// pointer to data of next ( or first ) stepper
+    class MoToStepper *syncStepper;		// pointer to the stepper object
+	struct stepperData_t *stepperDataP; // pointer to stepper data for use in IRQ ( master needs this to set slave speed )
+	//uint8_t stepperMode;			// STOPPED, MASTER, SLAVE (needed?)
+	uint32_t ratioToMaster;			// in RATIOBASE, compared to master ( is == 0 at master )
+	uint32_t ratioCnt;				// Counter to determine next slave step
+};
+
+
 typedef struct stepperData_t {
   struct stepperData_t *nextStepperDataP;    // chain pointer
-  volatile uint32_t stepCnt;        // nmbr of steps to take
-  uint32_t stepCnt2;                // nmbr of steps to take after automatic reverse
+  stepperSyncData_t *syncDataP=NULL;		// pointer to syncdata of this stepper. The pointer is only set while a synced move is active.
+											// all other synced steppers follow in a circular pointerchain
+  volatile uint32_t stepCnt;    // nmbr of steps to take
+  uint32_t stepCnt2;            // nmbr of steps to take after automatic reverse
   volatile int8_t patternIx;    // Pattern-Index of actual Step (0-7)
   int8_t   patternIxInc;        // halfstep: +/-1, fullstep: +/-2, STEPDIR +1/-1  the sign defines direction
   #ifdef ESP8266
@@ -76,8 +96,9 @@ typedef struct stepperData_t {
   #else
 	// on the other platforms the time values count in cycles.
     // On 32-bit processors cyclelength is 1 µsec, and there is no remainder
-	uintxx_t tCycSteps;           // nbr of IRQ cycles per step ( target value of motorspeed  )
-	volatile uintxx_t aCycSteps;           // nbr of IRQ cycles per step ( actual motorspeed  )
+	// On 8-bit AVR sycle length is defined in MobaTools.h ( = min time between IRQ's )
+	uintxx_t tCycSteps;           // nbr of cycles per step ( target value of motorspeed  )
+	volatile uintxx_t aCycSteps;  // nbr of cycles per step ( actual motorspeed  )
     #ifndef IS_32BIT
     // Remainder needed only on 8-Bit processors
 	uint16_t tCycRemain;          // Remainder of division when computing tCycSteps

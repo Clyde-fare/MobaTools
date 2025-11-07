@@ -9,6 +9,7 @@
 */
 #include <inttypes.h>
 #include <Arduino.h>
+#include <limits.h>
 
 //architecture specific includes
 #ifdef ARDUINO_ARCH_AVR

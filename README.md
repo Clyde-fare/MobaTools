@@ -27,6 +27,10 @@ A documentation file in [german](MobaTools-270-de.pdf) and [english](MobaTools-2
 
 | Version |  Release Date  | Description
 | ------- |  ------------  | -----------
+| 3.0.0 | 2025-xx-xx| 
+| | | old classnames from V1.x are no longer valid
+| | | Synced stepper move with acceleration and deceleration
+| | | some bugfixes and minor enhancements
 | 2.7.0 | 2025-03-05| several bugfixes, some docu enhancements
 | | | Support of RP2040 / RP2350
 | | | Synchronos move of steppers ( without acceleration, experimental )

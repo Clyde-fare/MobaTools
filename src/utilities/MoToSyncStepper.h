@@ -1,15 +1,14 @@
-/* MoToSyncStepper
-** class to syncronise the movement of up to MAXSTEPPER steppers
-** The speed of each stepper is set in such a way, that alle steppers
-** reach their target nearly at the same time
-** IMPORTANT: rampLen is set to 0 when moving the steppers!!
+/* MoToSyncStepper V3.0
+** class to syncronise the movement of up to MAXSTEPPER steppers with acceleration and deceleration
+** The stepper with the longest distance to move is the master. This movement is controlled in the
+** ISR like a singel stepper. All other steppers that are closer to the target (slaves) 
+** are controlled by the master, which sets the time for the next step of the slave steppers.
 ** During the synced movement no changes to the stepper objects are allowed.
-**
-** The functionalitiy is derived from the MultiStepper class of AccelStepper
 **
 */
 
 #pragma once
+
 
 class MoToSyncStepper
 {
@@ -28,13 +27,15 @@ public:
 	bool moving();				    // true until all steppers reached their targeet.
      
 private:
-    // Array of pointers to the steppers we are controlling.
-    // Fills from 0 onwards
-    MoToStepper* _steppers[MAX_STEPPER];
+    // all steppers that will run in sync are connected via a circular pointerchain.
+	// 
+    //stepperSyncData_t _stepperSyncData[MAX_STEPPER];
+    stepperSyncData_t *stepperChain;	// pointer chain of steppers in sync
 
     // Number of steppers we are controlling and the number
     // of steppers in _steppers[]
     uint8_t		_num_steppers;
 	uintxx_t 	_maxSpeed;		// speed of the stepper with longest distance
-   long *_targets;      // pointer to the targets			
+	uintxx_t 	_rampLen;		// ramp length of the stepper with longest distance
+	long *_targets;      // pointer to the targets			
 };

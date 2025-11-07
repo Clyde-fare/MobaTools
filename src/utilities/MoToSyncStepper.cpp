@@ -1,6 +1,6 @@
 // MoToSyncStepper.cpp
 //
-// Based on MultiStepper, Copyright (C) 2015 Mike McCauley
+// Syncronized stepper move with acceleration and deceleration
 // 
 // This software is part of the MobaTools library
 
@@ -17,7 +17,8 @@ boolean MoToSyncStepper::addStepper(MoToStepper& stepper)
 {
     if (_num_steppers >= MAX_STEPPER)
 	return false; // No room for more
-    _steppers[_num_steppers++] = &stepper;
+	// Add stepper to sync-chain
+    //TODO
     return true;
 }
 
@@ -30,8 +31,9 @@ void MoToSyncStepper::setTargets( long *absTarget ) {
     _targets = absTarget;
 	long maxDistance = 0;
     uint8_t i;
+	/*
     for (i = 0; i < _num_steppers; i++) {
-		long thisDistance = abs(  absTarget[i] - _steppers[i]->currentPosition() );
+		long thisDistance = abs(  absTarget[i] - _stepperSyncData[i].syncStepper->currentPosition() );
 		if ( maxDistance <= thisDistance ) {
 			// new max
 			maxDistance = thisDistance;
@@ -43,26 +45,29 @@ void MoToSyncStepper::setTargets( long *absTarget ) {
 		long thisDistance = abs( absTarget[i] - _steppers[i]->currentPosition() );
 		_steppers[i]->setSpeedSteps( (_maxSpeed * thisDistance) / maxDistance , 0 ); 
 	}
+	*/
 }	
 	
 void MoToSyncStepper::moveTo(long absTarget[])
 {
     // First set all stepperspeeds
 	setTargets( absTarget );
-	
+	/*
 	// now start all steppers
     for ( uint8_t i = 0; i < _num_steppers; i++) {
         DB_PRINT("stepper %d moving from %ld to %ld", i,_steppers[i]->currentPosition()  , absTarget[i] );
 		_steppers[i]->moveTo( absTarget[i] );
     }
-
+	*/
 }
 
 bool MoToSyncStepper::moving() {
 	int allMoving=0;
+	/*
     for ( uint8_t i = 0; i < _num_steppers; i++) {
-		allMoving += _steppers[i]->moving();
+		allMoving += _stepperSyncData[i].syncStepper->moving();
     }
+	*/
 	return ( allMoving > 0 );
 	
 }
@@ -70,10 +75,11 @@ bool MoToSyncStepper::moving() {
 void MoToSyncStepper::startSyncMove() {
 	// start the move and wait until it is finished
 	// now start all steppers
+	/*
     for ( uint8_t i = 0; i < _num_steppers; i++) {
 		_steppers[i]->moveTo( _targets[i] );
     }
 	// and wait ...
 	while ( moving() );
-
+	*/
 }	
