@@ -378,15 +378,17 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 						// loop through all steppers of the synced move and check if a step is due
 						stepperSyncData_t *slavePtr = locSyncDataP->nextSyncData;
 						while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
-							slavePtr->ratioCnt -= RATIOBASE; 
 							if ( slavePtr->ratioCnt < RATIOBASE ) {
 								// slave step is due
-								uintxx_t slaveStep = stepperDataP->aCycSteps * slavePtr->ratioCnt/RATIOBASE;
+								uint32_t slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt) / RATIOBASE;
 								if (slaveStep < MIN_STEP_CYCLE ) slaveStep = MIN_STEP_CYCLE;
 								nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
 								slavePtr->stepperDataP->aCycSteps = slaveStep;
+								slavePtr->stepperDataP->cycCnt = 0;
 								//Reset ratio counter for slave
 								slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
+							} else {
+								slavePtr->ratioCnt -= RATIOBASE; 
 							}
 							slavePtr = slavePtr->nextSyncData; // Check next stepper until we reach our own ptr
 						}

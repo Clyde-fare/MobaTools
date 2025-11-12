@@ -73,6 +73,7 @@ struct stepperSyncData_t {			// this is a circular chain of steppers in sync
     class MoToStepper *syncStepper;		// pointer to the stepper object
 	struct stepperData_t *stepperDataP; // pointer to stepper data for use in IRQ ( master needs this to set slave speed )
 	//uint8_t stepperMode;			// STOPPED, MASTER, SLAVE (needed?)
+	long stepsToMove;				// step in synchronos move
 	uint32_t ratioToMaster;			// in RATIOBASE, compared to master ( is == 0 at master )
 	uint32_t ratioCnt;				// Counter to determine next slave step
 };
@@ -156,6 +157,7 @@ typedef union { // used output channels as bit and uint8_t
 //////////////////////////////////////////////////////////////////////////////
 class MoToStepper
 {
+    friend class MoToSyncStepper;	// MoToSyncStepper needs access to _stepperData
   private:
     static outUsed_t outputsUsed;
     static byte     _stepperCount;  // number of objects ( objectcounter )

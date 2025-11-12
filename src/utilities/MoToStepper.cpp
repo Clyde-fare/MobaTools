@@ -56,7 +56,7 @@ MoToStepper::MoToStepper(long steps, uint8_t mode ) {
     MoToStepper::initialize ( steps, mode );
 }
 
-// private functions ---------------
+// private functions ############################################################################
 void MoToStepper::initialize ( long steps360, uint8_t mode ) {
     // create new instance
     MODE_TP1;       // activate debug-pins
@@ -100,7 +100,7 @@ void MoToStepper::initialize ( long steps360, uint8_t mode ) {
     }
     
 }
-long MoToStepper::getSFZ() {
+long MoToStepper::getSFZ() { //############################################################
     // get step-distance from zero point
     // irq must be disabled, because stepsFromZero is updated in interrupt
     noInterrupts();
@@ -111,7 +111,7 @@ long MoToStepper::getSFZ() {
     return ( stepMode==STEPDIR?lastSFZ:lastSFZ / stepMode);
 }
 
-bool MoToStepper::_chkRunning() {
+bool MoToStepper::_chkRunning() { // #########################################################
     // is the stepper moving?
     bool tmp;
     _noStepIRQ();
@@ -121,7 +121,7 @@ bool MoToStepper::_chkRunning() {
 }
 
 // public functions -------------------
-uint8_t MoToStepper::attach( byte stepP, byte dirP ) {
+uint8_t MoToStepper::attach( byte stepP, byte dirP ) { //######################################
     // step motor driver STEPDIR is used
     byte pins[2];
     if ( stepMode != STEPDIR ) return 0;    // false mode
@@ -222,7 +222,7 @@ uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
     return attachOK;
 }
 
-void MoToStepper::detach() {   // no more moving, detach from output
+void MoToStepper::detach() {   // no more moving, detach from output###########################################
     if ( _stepperData.output == NO_OUTPUT ) return ; // not attached
     // reconfigure stepper pins as INPUT ( state of RESET )
     // in FAST_PORTWRT mode this is not done, because the necessary Information is not stored
@@ -284,7 +284,7 @@ void MoToStepper::detach() {   // no more moving, detach from output
 }
 
 #ifndef ESP8266
-void MoToStepper::attachEnable( uint16_t delay ) {
+void MoToStepper::attachEnable( uint16_t delay ) { //###############################################
 	// This variant is for FULLSTEP and HALFSTEP mode with unipolar steppers ( no enable pin )
 	if ( stepMode == FULLSTEP || stepMode == HALFSTEP ) {
 	attachEnable( NO_ENABLEPIN, delay, true );
@@ -292,7 +292,7 @@ void MoToStepper::attachEnable( uint16_t delay ) {
 }
 #endif
 
-void MoToStepper::attachEnable( uint8_t enablePin, uint16_t delay, bool active ) {
+void MoToStepper::attachEnable( uint8_t enablePin, uint16_t delay, bool active ) { //#############################
     // define an enable pin. enable is active as long as the motor moves.
     _stepperData.enablePin = enablePin;
     _stepperData.enable = active;       // defines whether activ is HIGH or LOW
@@ -324,7 +324,7 @@ void MoToStepper::attachEnable( uint8_t enablePin, uint16_t delay, bool active )
     #endif
 }
 
-bool MoToStepper::autoEnable( bool state ) {
+bool MoToStepper::autoEnable( bool state ) { //######################################################################
 	// activate or deactive stepper enable (if it is enabled generally by attachEnable )
 	if ( _stepperData.enablePin != NO_STEPPER_ENABLE ) {
 		// it is generally enabled, so set state accordingly
@@ -354,14 +354,14 @@ bool MoToStepper::autoEnable( ) {
 
 
 
-int MoToStepper::setSpeed( int rpm10 ) {
+int MoToStepper::setSpeed( int rpm10 ) { //###########################################################################
     // Set speed in rpm*10. Step time is computed internally based on CYCLETIME and
     // steps per full rotation (stepsRev)
     if ( _stepperData.output == NO_OUTPUT ) return 0 ; // not attached
     return setSpeedSteps( min( 1000000L / MIN_STEPTIME * 10, (long)rpm10 * stepsRev / 60 ) ) ;
 }
 
-uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10 ) {
+uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10 ) { //##########################################################
     // Speed in steps per sec * 10
     // without a new ramplen, the ramplen is adjusted according to the speedchange
     speed10 = min( uintxx_t(1000000L / MIN_STEPTIME * 10), speed10 );
@@ -374,13 +374,13 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10 ) {
     return setSpeedSteps( speed10,  -rtmp-1 );
 }
 
-uintxx_t MoToStepper::setRampLen( uintxx_t rampSteps ) {
+uintxx_t MoToStepper::setRampLen( uintxx_t rampSteps ) { //#########################################################
     // set length of ramp ( from stop to actual target speed ) in steps
     return setSpeedSteps( _stepSpeed10, rampSteps );
 }
 
 
-int32_t MoToStepper::getSpeedSteps( ) {
+int32_t MoToStepper::getSpeedSteps( ) { //############################################################################
 	// return actual speed in steps/ 10sec 
     if ( _stepperData.output == NO_OUTPUT ) return 0; // not attached
 	int8_t direction;
@@ -431,6 +431,7 @@ int32_t MoToStepper::getSpeedSteps( ) {
 	return (int32_t)actSpeedSteps * direction;
 }
 
+//#################################################################################################################
 void MoToStepper::doSteps( long stepValue) {
     _doSteps( stepValue, 0 );
 }
@@ -507,32 +508,43 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
             }
         } else {
             // stepper does not move -> start a new move
+			// because it's not moving it maybe a slave in a synced move
             if ( stepValue != 0 ) {
                 // we must move
                 if ( stepValue > 0 ) patternIxInc = abs( _stepperData.patternIxInc );
                 else     patternIxInc = -abs( _stepperData.patternIxInc );
                 
                 _noStepIRQ();
-                #ifdef ESP8266
-                    _stepperData.aCycSteps       = _stepperData.cyctXramplen / RAMPOFFSET; // first steplen in ramp
-                    _stepperData.rampState      = rampStat::RAMPACCEL;
-                    //digitalWrite( _stepperData.pins[1], patternIxInc<0 );      // setze dir-output
-                    startMove = 1;
-                #else
-                    _stepperData.cycCnt         = MAX_JITTER;            // start with the next IRQ
-					_stepperData.aCycSteps 		= _stepperData.cyctXramplen / RAMPOFFSET ;	// create step after starttime of ramp
-                    if ( _stepperData.aCycSteps < MIN_START_CYCLES ) _stepperData.aCycSteps  = MIN_START_CYCLES;
-					#ifndef IS_32BIT
-                    _stepperData.aCycRemain     = 0;  
+				if ( _stepperData.syncDataP != NULL && _stepperData.syncDataP->ratioToMaster > 0 ) {
+					// die Erkennung auf Slave darf nicht per SYNCSLVE gemacht werden. SYNCSLAVE darf erst
+					// hier gesetzt werden, sonst würde der stepper als 'moving' gelten ( >CRUISING )
+					// it is a slave, so no own speed settings
+					_stepperData.aCycSteps      = UINT_MAX; // don't create own step
+					_stepperData.cycCnt			= 0;
+					_stepperData.rampState		= rampStat::SYNCSLAVE;
+				} else {
+					// no slave, it has its own speed/ramp settings
+					#ifdef ESP8266
+						_stepperData.aCycSteps       = _stepperData.cyctXramplen / RAMPOFFSET; // first steplen in ramp
+						_stepperData.rampState      = rampStat::RAMPACCEL;
+						//digitalWrite( _stepperData.pins[1], patternIxInc<0 );      // setze dir-output
+						startMove = 1;
+					#else
+						_stepperData.cycCnt         = MAX_JITTER;            // start with the next IRQ
+						_stepperData.aCycSteps 		= _stepperData.cyctXramplen / RAMPOFFSET ;	// create step after starttime of ramp
+						if ( _stepperData.aCycSteps < MIN_START_CYCLES ) _stepperData.aCycSteps  = MIN_START_CYCLES;
+						#ifndef IS_32BIT
+						_stepperData.aCycRemain     = 0;  
+						#endif
+					   if ( _stepperData.enableOn ) {
+							// start delaytime ( Stepper is enabled in ISR )
+							_stepperData.rampState      = rampStat::STARTING;
+						} else {
+							// no delay
+							_stepperData.rampState      = rampStat::RAMPACCEL;
+						}
 					#endif
-                   if ( _stepperData.enableOn ) {
-                        // start delaytime ( Stepper is enabled in ISR )
-                        _stepperData.rampState      = rampStat::STARTING;
-                    } else {
-                        // no delay
-                        _stepperData.rampState      = rampStat::RAMPACCEL;
-                    }
-                #endif
+				}
                 _stepperData.patternIxInc   = patternIxInc;
                 _stepperData.stepsInRamp    = 0;
                 _stepperData.stepCnt        = stepCnt;
@@ -558,24 +570,33 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
             #endif
         } else if ( _stepperData.rampState < rampStat::CRUISING  ) {
             // stepper does not move, start it because we have to do steps
-            #ifdef ESP8266
-				_stepperData.rampState      = rampStat::CRUISING;   // we don't have a ramp
-				_stepperData.aCycSteps       = _stepperData.tCycSteps;
-				startMove = 1;
-            #else
-				_stepperData.cycCnt         = MAX_JITTER;            // start with the next IRQ
-				_stepperData.aCycSteps      = _stepperData.tCycSteps; //MIN_START_CYCLES;
-				#ifndef IS_32BIT
-				_stepperData.aCycRemain     = 0; 
+			if ( _stepperData.syncDataP != NULL && _stepperData.syncDataP->ratioToMaster > 0 ) {
+				// die Erkennung auf Slave darf nicht per SYNCSLVE gemacht werden. SYNCSLAVE darf erst
+				// hier gesetzt werden, sonst würde der stepper als 'moving' gelten ( >CRUISING )
+				// it is a slave, so no own speed settings
+				_stepperData.aCycSteps      = UINT_MAX; // don't create own step
+				_stepperData.cycCnt			= 0;
+				_stepperData.rampState		= rampStat::SYNCSLAVE;
+			} else {
+				#ifdef ESP8266
+					_stepperData.rampState      = rampStat::CRUISING;   // we don't have a ramp
+					_stepperData.aCycSteps       = _stepperData.tCycSteps;
+					startMove = 1;
+				#else
+					_stepperData.cycCnt         = MAX_JITTER;            // start with the next IRQ
+					_stepperData.aCycSteps      = _stepperData.tCycSteps; //MIN_START_CYCLES;
+					#ifndef IS_32BIT
+					_stepperData.aCycRemain     = 0; 
+					#endif
+					if ( _stepperData.enableOn ) {
+							// start delaytime ( Stepper is enabled in ISR )
+						_stepperData.rampState      = rampStat::STARTING;
+					} else {
+						// no delay
+						_stepperData.rampState      = rampStat::CRUISING;
+					}
 				#endif
-				if ( _stepperData.enableOn ) {
-                        // start delaytime ( Stepper is enabled in ISR )
-					_stepperData.rampState      = rampStat::STARTING;
-				} else {
-					// no delay
-					_stepperData.rampState      = rampStat::CRUISING;
-				}
-            #endif
+			}
         }
         _stepIRQ();
         //DB_PRINT( "NoRamp:, sCnt=%ld, sCnt2=%ld, sMove=%ld, aCyc=%d", _stepperData.stepCnt, _stepperData.stepCnt2, stepsToMove, _stepperData.aCycSteps );
@@ -620,7 +641,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 
 
 // set reference point for absolute positioning
-void MoToStepper::setZero() {
+void MoToStepper::setZero() { //#################################################################################
     setZero(0);
 }
 
@@ -639,6 +660,7 @@ void MoToStepper::setZero(long zeroPoint, long steps360) {
     setZero( zeroPoint );
 }
 
+//#################################################################################################################
 void MoToStepper::write(long angleArg ) {
     // set next position as angle, measured from last setZero() - point
     DB_PRINT("write: %d", (int)angleArg);
@@ -670,6 +692,7 @@ void MoToStepper::writeSteps( long stepPos ) {
     _doSteps(stepPos  - getSFZ(), 1 );
 }
 
+//#################################################################################################################
 long MoToStepper::read() {
 	return MoToStepper::read(1);
 }
@@ -695,7 +718,7 @@ long MoToStepper::readSteps()
 }
 
 
-long MoToStepper::stepsToDo() { 
+long MoToStepper::stepsToDo() { //###############################################################################
     // return remaining steps until target position
     long tmp;
     _noStepIRQ(); // disable Stepper interrupt, because (long)stepcnt is changed in TCR interrupt
@@ -705,7 +728,7 @@ long MoToStepper::stepsToDo() {
 }
 
         
-uint8_t MoToStepper::moving() {
+uint8_t MoToStepper::moving() { //#################################################################################
     // return how much still to move (percentage)
     long tmp;
     if ( _stepperData.output == NO_OUTPUT ) return 0; // not attached
@@ -725,7 +748,7 @@ uint8_t MoToStepper::moving() {
     return tmp ;
 }
 
-void MoToStepper::rotate(int8_t direction) {
+void MoToStepper::rotate(int8_t direction) { //##################################################################
 	// rotate endless ( not really, do maximum stepcount ;-)
     if ( _stepperData.output == NO_OUTPUT ) return; // not attached
     
@@ -766,6 +789,7 @@ void MoToStepper::rotate(int8_t direction) {
     prDynData();
 }
 
+//#################################################################################################################
 void MoToStepper::stop() {
 	// immediate stop of the motor
     if ( _stepperData.output == NO_OUTPUT ) return; // not attached
