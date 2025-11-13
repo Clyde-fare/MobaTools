@@ -39,7 +39,9 @@ private:
     uint8_t		_numSteppers;
 	uintxx_t 	_maxSpeed;		// speed of the stepper with longest distance
 	uintxx_t 	_rampLen;		// ramp length of the stepper with longest distance
-	stepperSyncData_t *_masterDataP;	// Sync Data of masterstepper ( set by 'setTargets' )
+	stepperSyncData_t *_masterSyncDataP;	// Sync Data of masterstepper ( set by 'setTargets' )
 
 	long *_targets;      // pointer to the targets			
+	void printStepperChain();	// only for debugging
+
 };

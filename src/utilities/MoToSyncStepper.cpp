@@ -8,6 +8,8 @@
 #include <Arduino.h>
 #include <MobaTools.h>
 
+void printStepperChain();
+
 MoToSyncStepper::MoToSyncStepper()
     : _numSteppers(0), _maxSpeed(10000)
 {
@@ -45,16 +47,18 @@ void MoToSyncStepper::setTargets( long *absTarget, bool absValues  ) {
 	// first find the stepper that has to move the longest distance
     _targets = absTarget;
 	long maxDistance = 0;
+	_masterSyncDataP = NULL; // There maybe no master if all distances are 0
 	stepperSyncData_t *tempP = _stepperChain;		// start of chain -> pointer to first stepper
     uint8_t i;
+	//bool masterFound = false;
 	DB_PRINT("finding longest distance...");
     for (i = 0; i < _numSteppers; i++) {
 		long thisDistance =   absTarget[i] - tempP->syncStepper->currentPosition() ;
 		tempP->stepsToMove = thisDistance;
-		if ( maxDistance <= abs(thisDistance) ) {
+		if ( maxDistance < abs(thisDistance)  ) {
 			// new max
 			maxDistance = abs(thisDistance);
-			_masterDataP = tempP;
+			_masterSyncDataP = tempP;
 		}
 		tempP = tempP->nextSyncData;	// next stepper
        DB_PRINT("setTar: i=%d, maxD=%ld, thisD=%ld", i,maxDistance,thisDistance);
@@ -62,17 +66,15 @@ void MoToSyncStepper::setTargets( long *absTarget, bool absValues  ) {
 	// set distance ratio to master
 	tempP = _stepperChain;		// start of chain -> pointer to first stepper
 	//DB_PRINT("compute ratio to master");
-	bool masterFound = false;	// there can only be one master
 	do {
 		// steptime ratio master -> slave
 		if ( tempP->stepsToMove != 0 ) {
 			// stepper must move
 			tempP->ratioToMaster = (maxDistance * RATIOBASE) / abs(tempP->stepsToMove)  ;
 			//DB_PRINT( "Ratio=%ld", tempP->ratioToMaster );
-			if ( tempP->ratioToMaster == RATIOBASE && !masterFound) {
+			if ( tempP == _masterSyncDataP) {
 				tempP->ratioToMaster = 0; // This is the master	
 				tempP->ratioCnt = 0; // This is the master	
-				masterFound = true;
 			} else {
 				tempP->ratioCnt = tempP->ratioToMaster / 2;
 			}
@@ -100,9 +102,30 @@ void MoToSyncStepper::setTargets( long *absTarget, bool absValues  ) {
 uint8_t MoToSyncStepper::moveTo(long absTarget[]) {
 	//TODO: Prüfen, ob ein sync move möglich ist ( Keiner der betroffenen Stepper darf in Bewegung sein )
 	stepperSyncData_t *tempP = _stepperChain;		// start of chain -> pointer to first stepper
-
+	stepperData_t		*masterStepperDataP;					// Pointer to data of actual master
+	stepperData_t		*tmpStepperDataP;
     // First set all  syncData
 	setTargets( absTarget );
+	if ( _masterSyncDataP == NULL ) return false; // no master - no movement
+	printStepperChain();
+	masterStepperDataP = _masterSyncDataP->stepperDataP;
+	// now remove masterstepper from within the chain
+	// search master in chain
+	if ( stepperRootP != masterStepperDataP ) {
+		// Master steht noch nicht am Anfang - verschieben
+		_noStepIRQ();
+		tmpStepperDataP = stepperRootP;
+		while ( tmpStepperDataP->nextStepperDataP != masterStepperDataP ) tmpStepperDataP = tmpStepperDataP->nextStepperDataP;
+		tmpStepperDataP->nextStepperDataP = masterStepperDataP->nextStepperDataP;
+
+		// sort the master at the beginning of the chain of stepperdata. This ensures, that in IRQ all slaves 
+		// are worked upon after the master.
+		// set master at the beginning of the stepper chain
+		masterStepperDataP->nextStepperDataP = stepperRootP;
+		stepperRootP = masterStepperDataP;
+		_stepIRQ();
+	}
+	printStepperChain();
 	// now start all steppers
 	tempP = _stepperChain;		// start of chain -> pointer to first stepper
 	DB_PRINT("Starting steppers");
@@ -146,4 +169,23 @@ void MoToSyncStepper::startSyncMove() {
 	// and wait ...
 	while ( moving() );
 	*/
-}	
+}
+	
+#ifdef debugPrint
+	// Ausgeben der Stepper-Datenchain für den IRQ
+	void MoToSyncStepper::printStepperChain() {
+		char txtBuf[80];
+		stepperData_t	*tempP = stepperRootP;
+		DB_PRINT("Master: 0x%08x ",(uintxx_t) _masterSyncDataP->stepperDataP );
+		sprintf (txtBuf, "root: %08x, ", (uintxx_t)tempP );  Serial.print(txtBuf);
+		while ( tempP != NULL ) {
+			tempP = tempP-> nextStepperDataP;
+			sprintf (txtBuf, "next: %08x, ", (uintxx_t)tempP );  Serial.print(txtBuf);
+		}
+		Serial.println();
+	}
+		
+#else
+	void MoToSyncStepper::printStepperChain() { // dummy
+	}	
+#endif

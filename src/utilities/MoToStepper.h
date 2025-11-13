@@ -154,6 +154,7 @@ typedef union { // used output channels as bit and uint8_t
     
 } outUsed_t;
 
+extern stepperData_t *stepperRootP; // Start aller verketteten Stepper ( wird auch in MoToSyncStepper benötigt )
 //////////////////////////////////////////////////////////////////////////////
 class MoToStepper
 {

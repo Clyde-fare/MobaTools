@@ -5,7 +5,7 @@
 extern bool timerInitialized;
 
 // constants
-static stepperData_t *stepperRootP = NULL;    // start of stepper data chain ( NULL if no stepper object )
+stepperData_t *stepperRootP = NULL;    // start of stepper data chain ( NULL if no stepper object )
 uint8_t spiStepperData[2]; // step pattern to be output on SPI
                             // low nibble of spiStepperData[0] is SPI_1
                             // high nibble of spiStepperData[1] is SPI_4
