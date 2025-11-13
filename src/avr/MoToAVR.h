@@ -11,7 +11,7 @@ static inline __attribute__((__always_inline__)) void _noStepIRQ() {
         TIMSKx &= ~_BV(OCIExB) ; 
     noStepISR_Cnt++;
     #if defined COMPILING_MOTOSTEPPER_CPP
-    SET_TP3;
+    //SET_TP3;
     #endif
     interrupts(); // allow other interrupts
 }
@@ -21,7 +21,7 @@ static inline __attribute__((__always_inline__)) void  _stepIRQ(bool force = fal
     if ( noStepISR_Cnt > 0 ) noStepISR_Cnt -= 1; // don't decrease if already 0 ( if enabling IRQ is called too often )
     if ( noStepISR_Cnt == 0 ) {
         #if defined COMPILING_MOTOSTEPPER_CPP
-            CLR_TP3;
+            //CLR_TP3;
         #endif
         TIMSKx |= _BV(OCIExB) ; 
     }
@@ -144,7 +144,7 @@ extern uint8_t bitSS;;
 
     
     static inline __attribute__((__always_inline__)) void startSpiWriteAS( uint8_t spiData[] ) {
-        SET_TP4;
+        //SET_TP4;
         CLR_SS;
         USIDR = spiData[1];
         #ifdef FASTSPI  // SPI mit syclk/2

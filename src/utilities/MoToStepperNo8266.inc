@@ -13,7 +13,7 @@ uint8_t spiStepperData[2]; // step pattern to be output on SPI
 
 bool IRAM_ATTR setStepperPins( stepperData_t *stepperDataP, uint8_t stepPattern ) {
 	// setting 4-pin stepperdata to enable/disable the stepper
-	//CLR_TP2;SET_TP2;
+	//SET_TP2;
 	// store pattern data
 	bool spiChanged = false;
 	switch ( stepperDataP->output ) {
@@ -68,7 +68,7 @@ bool IRAM_ATTR setStepperPins( stepperData_t *stepperDataP, uint8_t stepPattern 
 
 #pragma GCC optimize "O3"   // optimize ISR for speed
 void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
-    //SET_TP4;
+    SET_TP1;
     static const int DRAM_ATTR stepPattern[8] = {0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001,0b0001 };
     stepperData_t *stepperDataP;         // actual stepper data in IRQ
 	stepperSyncData_t *locSyncDataP;	 // Data for synchronous move ( =NULL if no sync move active )
@@ -372,6 +372,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 						//CLR_TP2;
 						break;
 					} // End of ramp-statemachine
+					/*
 					// Check if it is a master in a synced move, if true check if a slave step is due
 					if ( locSyncDataP != NULL ) {
 						// we are in a synced move and it's not a slave -> must be the master
@@ -380,7 +381,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 						while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
 							if ( slavePtr->ratioCnt < RATIOBASE ) {
 								// slave step is due
-								uint32_t slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt) / RATIOBASE;
+								uint32_t slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
 								if (slaveStep < MIN_STEP_CYCLE ) slaveStep = MIN_STEP_CYCLE;
 								nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
 								slavePtr->stepperDataP->aCycSteps = slaveStep;
@@ -392,13 +393,34 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 							}
 							slavePtr = slavePtr->nextSyncData; // Check next stepper until we reach our own ptr
 						}
-					}
+					} */
 				} else { // ----------- End of check if not a SLAVE ---------------------------
 					// it is a slave and did one step
 					// set aCycSteps to max, so that no step is generated, until master sets aCycSteps again
 					stepperDataP->aCycSteps = UINT_MAX;
 				}
                 //CLR_TP2;
+				if ( locSyncDataP != NULL && stepperDataP->rampState != rampStat::SYNCSLAVE ) {
+					// we are in a synced move and it's not a slave -> must be the master
+					// loop through all steppers of the synced move and check if a step is due
+					stepperSyncData_t *slavePtr = locSyncDataP->nextSyncData;
+					while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
+						if ( slavePtr->ratioCnt < RATIOBASE ) {
+							// slave step is due
+							uint32_t slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
+							//if (slaveStep < MIN_STEP_CYCLE ) slaveStep = MIN_STEP_CYCLE;
+							nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
+							slavePtr->stepperDataP->aCycSteps = slaveStep;
+							slavePtr->stepperDataP->cycCnt = 0;
+							//Reset ratio counter for slave
+							slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
+						} else {
+							slavePtr->ratioCnt -= RATIOBASE; 
+						}
+						slavePtr = slavePtr->nextSyncData; // Check next stepper until we reach our own ptr
+					}
+				}
+
             } // End of do one step
 			//CLR_TP2;
             #ifdef IS_32BIT
@@ -409,7 +431,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
             }
             #endif
             nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps+MAX_JITTER-stepperDataP->cycCnt );
-            CLR_TP2;
+            //CLR_TP2;
         } // end of 'if stepper active AND moving'
 		
         else if ( stepperDataP->rampState == rampStat::STARTING && stepperDataP->speedZero != ZEROSPEEDACTIVE ) {
@@ -460,7 +482,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
         startSpiWriteAS( spiStepperData );
         //CLR_TP4;
     }
-    //CLR_TP4;
+    CLR_TP1;
 } // ==================== End of stepper ISR ======================================
 #pragma GCC optimize "Os"
 

@@ -1,9 +1,8 @@
 // AVR HW-spcific Functions
 #ifdef ARDUINO_ARCH_AVR
-#include <MobaTools.h>
 #define debugTP
 //#define debugPrint
-#include <utilities/MoToDbg.h>
+#include <MobaTools.h>
 
 //#warning "HW specfic - avr ---"
 
