@@ -72,7 +72,8 @@ struct stepperSyncData_t {			// this is a circular chain of steppers in sync
 	struct stepperSyncData_t *nextSyncData;	// pointer to data of next ( or first ) stepper
     class MoToStepper *syncStepper;		// pointer to the stepper object
 	struct stepperData_t *stepperDataP; // pointer to stepper data for use in IRQ ( master needs this to set slave speed )
-	//uint8_t stepperMode;			// STOPPED, MASTER, SLAVE (needed?)
+	uintxx_t lastMasterSteps;		// last aCycleSteps of master - needed for last step if master did its last step
+									// if master did its last step, step length is no longer available.
 	long stepsToMove;				// step in synchronos move
 	uint32_t ratioToMaster;			// in RATIOBASE, compared to master ( is == 0 at master )
 	uint32_t ratioCnt;				// Counter to determine next slave step

@@ -400,14 +400,22 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					stepperDataP->aCycSteps = UINT_MAX;
 				}
                 //CLR_TP2;
-				if ( locSyncDataP != NULL && stepperDataP->rampState != rampStat::SYNCSLAVE ) {
-					// we are in a synced move and it's not a slave -> must be the master
+				//if ( locSyncDataP != NULL && stepperDataP->rampState != rampStat::SYNCSLAVE ) {
+				if ( locSyncDataP != NULL && locSyncDataP->ratioToMaster == 0 ) {
+					// we are in a synced move and it's the master
 					// loop through all steppers of the synced move and check if a step is due
 					stepperSyncData_t *slavePtr = locSyncDataP->nextSyncData;
+					uint32_t slaveStep;
+					SET_TP2; 	//digitalWrite(A1, HIGH);
 					while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
 						if ( slavePtr->ratioCnt < RATIOBASE ) {
 							// slave step is due
-							uint32_t slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
+							if (  stepperDataP->stepCnt > 0 ) {
+								locSyncDataP->lastMasterSteps = stepperDataP->aCycSteps;
+								slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
+							} else {
+								slaveStep = (locSyncDataP->lastMasterSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
+							}
 							//if (slaveStep < MIN_STEP_CYCLE ) slaveStep = MIN_STEP_CYCLE;
 							nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
 							slavePtr->stepperDataP->aCycSteps = slaveStep;
@@ -419,6 +427,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 						}
 						slavePtr = slavePtr->nextSyncData; // Check next stepper until we reach our own ptr
 					}
+					CLR_TP2; 	//digitalWrite(A1, LOW);
 				}
 
             } // End of do one step
