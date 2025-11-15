@@ -16,6 +16,7 @@ Released versions can be installed by means of the library manager in arduino ID
 - AVR - ATmega328P ATmega2560, ATmega4809
 - AVR ATtiny, if it has the 16-bit timer 1 and a SPI or USI hardware
 - Renesas RA4M1 ( UNO R4 )
+- SamD21 (MKR-Series, Nano 33 Iot ...)
 - RP2040 / RP2350 processors ( the [core of Earle Philhower](https://github.com/earlephilhower/arduino-pico) must be used )
 - STM32F103x processors ( the [core of Roger Clark](https://github.com/rogerclarkmelbourne/Arduino_STM32) must be used )
 - ESP32 ( core versions 2.x and 3.x )
@@ -29,6 +30,7 @@ A documentation file in [german](MobaTools-270-de.pdf) and [english](MobaTools-2
 | ------- |  ------------  | -----------
 | 3.0.0 | 2025-xx-xx| 
 | | | old classnames from V1.x are no longer valid
+| | | Support of SamD21 MCU (MKR-Series, Nano 33 Iot ...)
 | | | Synced stepper move with acceleration and deceleration
 | | | some bugfixes and minor enhancements
 | 2.7.0 | 2025-03-05| several bugfixes, some docu enhancements

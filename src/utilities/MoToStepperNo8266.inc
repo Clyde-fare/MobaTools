@@ -249,6 +249,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 }
                 // --------------- compute nexte steplength ------------------------------------
 				// --------------- This is not done on slave steppers ins sync moves ------------
+				SET_TP3;
 				if ( stepperDataP->rampState != rampStat::SYNCSLAVE ) {
 					//SET_TP2;
 					// ramp state machine
@@ -372,34 +373,13 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 						//CLR_TP2;
 						break;
 					} // End of ramp-statemachine
-					/*
-					// Check if it is a master in a synced move, if true check if a slave step is due
-					if ( locSyncDataP != NULL ) {
-						// we are in a synced move and it's not a slave -> must be the master
-						// loop through all steppers of the synced move and check if a step is due
-						stepperSyncData_t *slavePtr = locSyncDataP->nextSyncData;
-						while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
-							if ( slavePtr->ratioCnt < RATIOBASE ) {
-								// slave step is due
-								uint32_t slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
-								if (slaveStep < MIN_STEP_CYCLE ) slaveStep = MIN_STEP_CYCLE;
-								nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
-								slavePtr->stepperDataP->aCycSteps = slaveStep;
-								slavePtr->stepperDataP->cycCnt = 0;
-								//Reset ratio counter for slave
-								slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
-							} else {
-								slavePtr->ratioCnt -= RATIOBASE; 
-							}
-							slavePtr = slavePtr->nextSyncData; // Check next stepper until we reach our own ptr
-						}
-					} */
+
 				} else { // ----------- End of check if not a SLAVE ---------------------------
 					// it is a slave and did one step
 					// set aCycSteps to max, so that no step is generated, until master sets aCycSteps again
 					stepperDataP->aCycSteps = UINT_MAX;
 				}
-                //CLR_TP2;
+                CLR_TP3;
 				//if ( locSyncDataP != NULL && stepperDataP->rampState != rampStat::SYNCSLAVE ) {
 				if ( locSyncDataP != NULL && locSyncDataP->ratioToMaster == 0 ) {
 					// we are in a synced move and it's the master
@@ -407,13 +387,16 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					stepperSyncData_t *slavePtr = locSyncDataP->nextSyncData;
 					uint32_t slaveStep;
 					SET_TP2; 	//digitalWrite(A1, HIGH);
+					// loop through all slaves to calculate their next step
 					while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
 						if ( slavePtr->ratioCnt < RATIOBASE ) {
+							SET_TP3;
 							// slave step is due
 							if (  stepperDataP->stepCnt > 0 ) {
 								locSyncDataP->lastMasterSteps = stepperDataP->aCycSteps;
 								slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
 							} else {
+								// last step of master, aCycSteps is not a valid steptime anymore, so use last steptime
 								slaveStep = (locSyncDataP->lastMasterSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
 							}
 							//if (slaveStep < MIN_STEP_CYCLE ) slaveStep = MIN_STEP_CYCLE;
@@ -422,6 +405,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 							slavePtr->stepperDataP->cycCnt = 0;
 							//Reset ratio counter for slave
 							slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
+							CLR_TP3;
 						} else {
 							slavePtr->ratioCnt -= RATIOBASE; 
 						}
