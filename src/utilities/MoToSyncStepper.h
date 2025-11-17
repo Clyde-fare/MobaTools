@@ -26,7 +26,8 @@ public:
 	void startSyncMove();			// start the move and wait until it is finished
 	
 	bool moving();				    // true until all steppers reached their target.
-	void stop();					// emergency stop af all steppers ( no ramping )
+	void stop(bool emergency = true );	// emergency stop af all steppers ( no ramping )
+										// if emergency == false it will ramp down
      
 private:
     // all steppers that will run in sync are connected via a circular pointerchain.

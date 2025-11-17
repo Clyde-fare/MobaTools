@@ -64,11 +64,11 @@ enum class rampStat:byte { INACTIVE, STOPPED, SPEED0, STOPPING, STARTING, CRUISI
 //				when a step has been executed.
 */
 
-#define RATIOBASE 512U		// Base of speed ratio between master and slaves. Because slave are always slower the master
+#define RATIOBASE 1024U		// Base of speed ratio between master and slaves. Because slave are always slower the master
 							// the ratio is always greater than RATIOBASE
 							// This should always be a power of 2, to speed up the division /RATIOBASE in the ISR
-enum class syncStat:byte ( NONE, MASTER, SLAVE, CANCELED );
-						// NONE:	no synced move active
+enum class syncStat:byte { NOSYNC, MASTER, SLAVE, CANCELED };
+						// NOSYNC:	no synced move active
 						// MASTER:	Master stepper within a synced move ( works like a single stepper, but also times its slaves )
 						// SLAVE:	Slave stepper within a synced move ( steps are timed by master )
 						// CANCELED Move is canceled prematurely, master ramps down, no fixed targets for the slaves
@@ -90,7 +90,7 @@ typedef struct stepperData_t {
   struct stepperData_t *nextStepperDataP;    // chain pointer
   stepperSyncData_t *syncDataP=NULL;		// pointer to syncdata of this stepper. The pointer is only set while a synced move is active.
 											// all other synced steppers follow in a circular pointerchain
-  uint8_t syncMode;				// NONE, MASTER, SLAVE, CANCELED
+  syncStat syncMode;				// NONE, MASTER, SLAVE, CANCELED
   volatile uint32_t stepCnt;    // nmbr of steps to take
   uint32_t stepCnt2;            // nmbr of steps to take after automatic reverse
   volatile int8_t patternIx;    // Pattern-Index of actual Step (0-7)

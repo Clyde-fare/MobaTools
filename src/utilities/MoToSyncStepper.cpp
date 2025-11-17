@@ -11,13 +11,13 @@
 void printStepperChain();
 
 MoToSyncStepper::MoToSyncStepper()
-    : _numSteppers(0), _maxSpeed(10000)
+    : _numSteppers(0), _maxSpeed(5000), _rampLen(0)
 {
 }
 
 boolean MoToSyncStepper::addStepper(MoToStepper& stepper)
 {
-    //if (_num_steppers >= MAX_STEPPER) 	return false; // No room for more
+    if (_numSteppers >= MAX_STEPPER) 	return false; // No room for more
 	// Add stepper to sync-chain
 	// create new struct for new stepper at heap
 	stepperSyncData_t *tempP = new stepperSyncData_t( );
@@ -39,6 +39,7 @@ boolean MoToSyncStepper::addStepper(MoToStepper& stepper)
 }
 
 void MoToSyncStepper::setMaxSpeedSteps( uintxx_t speed10, uintxx_t rampLen ) {
+	// TODO if a sync move is in motion, this sets the master speed immediately
 	_maxSpeed = speed10;
 	_rampLen = rampLen;
 }
@@ -137,6 +138,10 @@ uint8_t MoToSyncStepper::moveTo(long absTarget[]) {
 			// if it is the master stepper set speed and ramp
 			if (tempP->ratioToMaster == 0 ) {
 				tempP->syncStepper->setSpeedSteps( _maxSpeed, _rampLen );
+				tempP->syncStepper->_stepperData.syncMode = syncStat::MASTER;
+			} else {
+				// no master, only set slavemode
+				tempP->syncStepper->_stepperData.syncMode = syncStat::SLAVE;
 			}
 			tempP->syncStepper->_stepperData.syncDataP = tempP;	// set pointer für sync data for use in ISR
 			tempP->syncStepper->move(tempP->stepsToMove);

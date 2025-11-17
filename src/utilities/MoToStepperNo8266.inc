@@ -224,6 +224,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 //if ( --stepperDataP->stepCnt == 0 ) {
 				stepperDataP->stepCnt = stepperDataP->stepCnt	-1;
                 if ( stepperDataP->stepCnt == 0 ) {
+					CLR_TP1;
                     // this was the last step.
                     if (stepperDataP->stepCnt2 > 0 ) { // check if we have to start a movement backwards
                         // yes, change Direction and go stpCnt2 Steps
@@ -235,22 +236,29 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                         stepperDataP->stepsInRamp = 0;      // we cannot be in ramp when stopped
                         if (stepperDataP->enableOn) {
                             // enable is active, wait for disabling
+							SET_TP1;
                             stepperDataP->aCycSteps = stepperDataP->cycDelay;
 							nextCycle = MIN_STEP_CYCLE/2; // step pulse will be resettet in half of min steptime
                             stepperDataP->rampState = rampStat::STOPPING;
+							CLR_TP1;
                         } else {    
-                        stepperDataP->aCycSteps = ISR_IDLETIME;    // no more Interrupts for this stepper needed
-                        stepperDataP->rampState = rampStat::STOPPED;
-						
-                        //CLR_TP2;
+							stepperDataP->aCycSteps = ISR_IDLETIME;    // no more Interrupts for this stepper needed
+							stepperDataP->rampState = rampStat::STOPPED;
+							//CLR_TP2;
                         }
                     }
-					stepperDataP->syncDataP = NULL;	// if it was a synchronos move
+					if ( stepperDataP->syncMode > syncStat::MASTER ) {
+						// it was a SLAVE in syncronous move, reset sync inidicators
+						// ( master mode must not be reset here, because MASTER my nee to do a last slave step later
+						stepperDataP->syncDataP = NULL;
+						stepperDataP->syncMode = syncStat::NOSYNC;
+					}
+					SET_TP1;
                 }
                 // --------------- compute nexte steplength ------------------------------------
-				// --------------- This is not done on slave steppers ins sync moves ------------
+				// --------------- This is not done on slave steppers in sync moves ------------
 				SET_TP3;
-				if ( stepperDataP->rampState != rampStat::SYNCSLAVE ) {
+				if ( stepperDataP->syncMode != syncStat::SLAVE ) {
 					//SET_TP2;
 					// ramp state machine
 					// !!! Auf ESP32 darf ein switch in ISR max 4 case-Blöcke enthalten !!!!
@@ -380,8 +388,8 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					stepperDataP->aCycSteps = UINT_MAX;
 				}
                 CLR_TP3;
-				//if ( locSyncDataP != NULL && stepperDataP->rampState != rampStat::SYNCSLAVE ) {
-				if ( locSyncDataP != NULL && locSyncDataP->ratioToMaster == 0 ) {
+				//if ( locSyncDataP != NULL && locSyncDataP->ratioToMaster == 0 ) {
+				if ( stepperDataP->syncMode == syncStat::MASTER ) {
 					// we are in a synced move and it's the master
 					// loop through all steppers of the synced move and check if a step is due
 					stepperSyncData_t *slavePtr = locSyncDataP->nextSyncData;
@@ -394,10 +402,11 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 							// slave step is due
 							if (  stepperDataP->stepCnt > 0 ) {
 								locSyncDataP->lastMasterSteps = stepperDataP->aCycSteps;
-								slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
+								slaveStep = ((stepperDataP->aCycSteps * slavePtr->ratioCnt) + (RATIOBASE/2)) / RATIOBASE +cyclesLastIRQ;
 							} else {
 								// last step of master, aCycSteps is not a valid steptime anymore, so use last steptime
 								slaveStep = (locSyncDataP->lastMasterSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
+								stepperDataP->syncMode = syncStat::NOSYNC; // last action of master
 							}
 							//if (slaveStep < MIN_STEP_CYCLE ) slaveStep = MIN_STEP_CYCLE;
 							nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
@@ -439,10 +448,15 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 				// set enablePin to active
 				digitalWrite( stepperDataP->enablePin, stepperDataP->enable );
 			}
-            stepperDataP->aCycSteps = stepperDataP->cycDelay;
-            if ( stepperDataP->stepRampLen > 0 ) stepperDataP->rampState = rampStat::RAMPACCEL;
-            else                                stepperDataP->rampState = rampStat::CRUISING;
-            nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps );
+			if ( stepperDataP->syncMode == syncStat::SLAVE ) {
+				// only set to 'CRUISING', steps are created via master
+				stepperDataP->rampState = rampStat::CRUISING;
+			} else {
+				stepperDataP->aCycSteps = stepperDataP->cycDelay;
+				if ( stepperDataP->stepRampLen > 0 ) stepperDataP->rampState = rampStat::RAMPACCEL;
+				else                                stepperDataP->rampState = rampStat::CRUISING;
+				nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps );
+			}
         } 
 		else if ( stepperDataP->rampState == rampStat::STOPPING  ) {
 			// Check if time between last step and disabling the motor has elapsed

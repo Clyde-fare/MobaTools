@@ -83,6 +83,7 @@ void MoToStepper::initialize ( long steps360, uint8_t mode ) {
 	#endif
     _stepperData.stepsFromZero = 0;
     _stepperData.rampState = rampStat::INACTIVE;
+    _stepperData.syncMode = syncStat::NOSYNC;		// default ist no sync mode active
     _stepperData.stepRampLen             = 0;       // initialize with no acceleration  
     _stepperData.delayActiv = false;            	// enable delaytime is runnung ( only ESP)
     _stepperData.output = NO_OUTPUT;          		// unknown, not attached yet
@@ -515,13 +516,18 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
                 else     patternIxInc = -abs( _stepperData.patternIxInc );
                 
                 _noStepIRQ();
-				if ( _stepperData.syncDataP != NULL && _stepperData.syncDataP->ratioToMaster > 0 ) {
-					// die Erkennung auf Slave darf nicht per SYNCSLVE gemacht werden. SYNCSLAVE darf erst
-					// hier gesetzt werden, sonst würde der stepper als 'moving' gelten ( >CRUISING )
+				if ( _stepperData.syncMode == syncStat::SLAVE ) {
 					// it is a slave, so no own speed settings
 					_stepperData.aCycSteps      = UINT_MAX; // don't create own step
 					_stepperData.cycCnt			= 0;
-					_stepperData.rampState		= rampStat::SYNCSLAVE;
+					_stepperData.rampState		= rampStat::CRUISING;
+				   if ( _stepperData.enableOn ) {
+						// start delaytime ( Stepper is enabled in ISR )
+						_stepperData.rampState      = rampStat::STARTING;
+					} else {
+						// no delay
+						_stepperData.rampState      = rampStat::CRUISING;
+					}
 				} else {
 					// no slave, it has its own speed/ramp settings
 					#ifdef ESP8266
@@ -557,7 +563,6 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
         if ( stepValue > 0 ) patternIxInc = abs( _stepperData.patternIxInc );
         else     patternIxInc = -abs( _stepperData.patternIxInc );
         _noStepIRQ();
-        //digitalWrite(16,0);
         // When moving to abs position, adjust stepCnt if there have been new steps
         if ( absPos ) stepCnt = abs( stepValue + lastSFZ - _stepperData.stepsFromZero );
         _stepperData.patternIxInc = patternIxInc;
@@ -570,13 +575,17 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
             #endif
         } else if ( _stepperData.rampState < rampStat::CRUISING  ) {
             // stepper does not move, start it because we have to do steps
-			if ( _stepperData.syncDataP != NULL && _stepperData.syncDataP->ratioToMaster > 0 ) {
-				// die Erkennung auf Slave darf nicht per SYNCSLVE gemacht werden. SYNCSLAVE darf erst
-				// hier gesetzt werden, sonst würde der stepper als 'moving' gelten ( >CRUISING )
+			if ( _stepperData.syncMode == syncStat::SLAVE ) {
 				// it is a slave, so no own speed settings
 				_stepperData.aCycSteps      = UINT_MAX; // don't create own step
 				_stepperData.cycCnt			= 0;
-				_stepperData.rampState		= rampStat::SYNCSLAVE;
+				if ( _stepperData.enableOn ) {
+						// start delaytime ( Stepper is enabled in ISR )
+					_stepperData.rampState      = rampStat::STARTING;
+				} else {
+					// no delay
+					_stepperData.rampState      = rampStat::CRUISING;
+				}
 			} else {
 				#ifdef ESP8266
 					_stepperData.rampState      = rampStat::CRUISING;   // we don't have a ramp
