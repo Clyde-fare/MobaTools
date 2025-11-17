@@ -70,8 +70,11 @@ enum class rampStat:byte { INACTIVE, STOPPED, SPEED0, STOPPING, STARTING, CRUISI
 enum class syncStat:byte { NOSYNC, MASTER, SLAVE, CANCELED };
 						// NOSYNC:	no synced move active
 						// MASTER:	Master stepper within a synced move ( works like a single stepper, but also times its slaves )
+						//			all states > MASTER are slave states
 						// SLAVE:	Slave stepper within a synced move ( steps are timed by master )
-						// CANCELED Move is canceled prematurely, master ramps down, no fixed targets for the slaves
+						// CANCELED slave stepper if move is canceled prematurely, 
+						// 			master ramps down, but no fixed targets for the slaves 
+						//			they stop, if master reaches its new target-
 // all steppers that will run in sync are connected via a circular pointerchain.
 struct stepperSyncData_t {			// this is a circular chain of steppers in sync
 	// per steppper data needed for synchronos move of steppers

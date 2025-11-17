@@ -401,10 +401,11 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 							SET_TP3;
 							// slave step is due
 							if (  stepperDataP->stepCnt > 0 ) {
+								// master still running
 								locSyncDataP->lastMasterSteps = stepperDataP->aCycSteps;
-								slaveStep = ((stepperDataP->aCycSteps * slavePtr->ratioCnt) + (RATIOBASE/2)) / RATIOBASE +cyclesLastIRQ;
+								slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt)  / RATIOBASE +cyclesLastIRQ;
 							} else {
-								// last step of master, aCycSteps is not a valid steptime anymore, so use last steptime
+								// this was the last step of master, aCycSteps is not a valid steptime anymore, so use last steptime
 								slaveStep = (locSyncDataP->lastMasterSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
 								stepperDataP->syncMode = syncStat::NOSYNC; // last action of master
 							}

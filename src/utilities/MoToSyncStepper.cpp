@@ -44,17 +44,22 @@ void MoToSyncStepper::setMaxSpeedSteps( uintxx_t speed10, uintxx_t rampLen ) {
 	_rampLen = rampLen;
 }
 
-void MoToSyncStepper::setTargets( long *absTarget, bool absValues  ) {
+void MoToSyncStepper::_setStepData( long *absTarget, bool absValues  ) {
 	// first find the stepper that has to move the longest distance
     _targets = absTarget;
 	long maxDistance = 0;
 	_masterSyncDataP = NULL; // There maybe no master if all distances are 0
 	stepperSyncData_t *tempP = _stepperChain;		// start of chain -> pointer to first stepper
     uint8_t i;
+	long thisDistance;
 	//bool masterFound = false;
 	DB_PRINT("finding longest distance...");
     for (i = 0; i < _numSteppers; i++) {
-		long thisDistance =   absTarget[i] - tempP->syncStepper->currentPosition() ;
+		if ( absValues ) {
+			thisDistance =   absTarget[i] - tempP->syncStepper->currentPosition() ;
+		} else{
+			thisDistance =   absTarget[i] ;
+		}
 		tempP->stepsToMove = thisDistance;
 		if ( maxDistance < abs(thisDistance)  ) {
 			// new max
@@ -99,14 +104,27 @@ void MoToSyncStepper::setTargets( long *absTarget, bool absValues  ) {
 	
 	#endif
 }	
+
+bool MoToSyncStepper::move(long stepsToDo[]) {
+	//Prüfen, ob ein sync move möglich ist ( Keiner der betroffenen Stepper darf in Bewegung sein )
+	// relative move
+    // First set all  syncData
+	_setStepData( stepsToDo, false  ); // values are relative
+	return _startMove();
+} 	
+bool MoToSyncStepper::moveTo(long absTarget[]) {
+	//Prüfen, ob ein sync move möglich ist ( Keiner der betroffenen Stepper darf in Bewegung sein )
+	// absolute move
+    // First set all  syncData
+	_setStepData( absTarget, true );	// values are absolute
+	return _startMove();
+} 	
 	
-uint8_t MoToSyncStepper::moveTo(long absTarget[]) {
-	//TODO: Prüfen, ob ein sync move möglich ist ( Keiner der betroffenen Stepper darf in Bewegung sein )
+bool MoToSyncStepper::_startMove() {	
+	if ( moving() ) return false;					// none of the steppers must move
 	stepperSyncData_t *tempP = _stepperChain;		// start of chain -> pointer to first stepper
 	stepperData_t		*masterStepperDataP;					// Pointer to data of actual master
 	stepperData_t		*tmpStepperDataP;
-    // First set all  syncData
-	setTargets( absTarget );
 	if ( _masterSyncDataP == NULL ) return false; // no master - no movement
 	printStepperChain();
 	masterStepperDataP = _masterSyncDataP->stepperDataP;

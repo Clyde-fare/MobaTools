@@ -16,12 +16,12 @@ public:
     MoToSyncStepper();
 
     boolean addStepper(MoToStepper& stepper);  		// Add a stepper to group of synced steppers
-	void setMaxSpeedSteps( uintxx_t speed10 );		// fastet speed of the motors ( in steps/10sec )
-	void setMaxSpeedSteps( uintxx_t speed10, uintxx_t rampLen );		// fastet speed of the motors ( in steps/10sec )
-    uint8_t moveTo(long absolute[]);  				// define the target positions of all steppers
+	void setMaxSpeedSteps( uintxx_t speed10, uintxx_t rampLen = 0 );		// fastet speed of the motors ( in steps/10sec )
+    bool moveTo(long absolute[]);  				// define the target positions of all steppers
+													// in group and start the move
+    bool move(long stepsToDo[]);  				// define the target positions of all steppers
 													// in group and start the move
 												
-	void setTargets(long absolute[], bool absValues = true ); 			// define targets (and set stepper speeds) , 
 												// but don't start movement
 	void startSyncMove();			// start the move and wait until it is finished
 	
@@ -30,6 +30,9 @@ public:
 										// if emergency == false it will ramp down
      
 private:
+	void _setStepData(long absolute[], bool absValues = true ); 	// set stepsToDo in stepperSyncData_t
+	bool _startMove();
+
     // all steppers that will run in sync are connected via a circular pointerchain.
 	// 
     //stepperSyncData_t _stepperSyncData[MAX_STEPPER];
