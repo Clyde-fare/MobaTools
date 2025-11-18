@@ -46,7 +46,6 @@ void MoToSyncStepper::setMaxSpeedSteps( uintxx_t speed10, uintxx_t rampLen ) {
 
 void MoToSyncStepper::_setStepData( long *absTarget, bool absValues  ) {
 	// first find the stepper that has to move the longest distance
-    _targets = absTarget;
 	long maxDistance = 0;
 	_masterSyncDataP = NULL; // There maybe no master if all distances are 0
 	stepperSyncData_t *tempP = _stepperChain;		// start of chain -> pointer to first stepper
@@ -123,28 +122,32 @@ bool MoToSyncStepper::moveTo(long absTarget[]) {
 bool MoToSyncStepper::_startMove() {	
 	if ( moving() ) return false;					// none of the steppers must move
 	stepperSyncData_t *tempP = _stepperChain;		// start of chain -> pointer to first stepper
-	stepperData_t		*masterStepperDataP;					// Pointer to data of actual master
+	stepperData_t		*masterStepperDataP;		// Pointer to data of actual master
 	stepperData_t		*tmpStepperDataP;
 	if ( _masterSyncDataP == NULL ) return false; // no master - no movement
-	printStepperChain();
+	
+	printStepperChain(); // only debugging
+	
+	// sort the master at the beginning of the chain of stepperdata. This ensures, that in IRQ all slaves 
+	// are worked upon after the master.
 	masterStepperDataP = _masterSyncDataP->stepperDataP;
 	// now remove masterstepper from within the chain
 	// search master in chain
 	if ( stepperRootP != masterStepperDataP ) {
-		// Master steht noch nicht am Anfang - verschieben
-		_noStepIRQ();
+		// Master not yet at the beginning, so move it
+		_noStepIRQ();  // there must not happene a stepper IRQ while changing the stepper chain
+		// search master in chain ...
 		tmpStepperDataP = stepperRootP;
 		while ( tmpStepperDataP->nextStepperDataP != masterStepperDataP ) tmpStepperDataP = tmpStepperDataP->nextStepperDataP;
+		// ... and remove it there ...
 		tmpStepperDataP->nextStepperDataP = masterStepperDataP->nextStepperDataP;
-
-		// sort the master at the beginning of the chain of stepperdata. This ensures, that in IRQ all slaves 
-		// are worked upon after the master.
-		// set master at the beginning of the stepper chain
+		// ... and move to the beginning of the stepper chain
 		masterStepperDataP->nextStepperDataP = stepperRootP;
 		stepperRootP = masterStepperDataP;
 		_stepIRQ();
 	}
-	printStepperChain();
+	
+	printStepperChain();	// only debugging
 	// now start all steppers
 	tempP = _stepperChain;		// start of chain -> pointer to first stepper
 	DB_PRINT("Starting steppers");
@@ -155,13 +158,15 @@ bool MoToSyncStepper::_startMove() {
 			// only steppers that really need to move
 			// if it is the master stepper set speed and ramp
 			if (tempP->ratioToMaster == 0 ) {
-				tempP->syncStepper->setSpeedSteps( _maxSpeed, _rampLen );
+				//tempP->syncStepper->setSpeedSteps( _maxSpeed, _rampLen );
 				tempP->syncStepper->_stepperData.syncMode = syncStat::MASTER;
 			} else {
 				// no master, only set slavemode
 				tempP->syncStepper->_stepperData.syncMode = syncStat::SLAVE;
 			}
 			tempP->syncStepper->_stepperData.syncDataP = tempP;	// set pointer für sync data for use in ISR
+			// set speed of all steppers ( but only master will really move at that speed )
+			tempP->syncStepper->setSpeedSteps( _maxSpeed, _rampLen );
 			tempP->syncStepper->move(tempP->stepsToMove);
 		}
 	} while ( tempP != _stepperChain ); // Until first stepper reached again.
@@ -182,18 +187,6 @@ bool MoToSyncStepper::moving() {
 	
 }
 
-void MoToSyncStepper::startSyncMove() {
-	// start the move and wait until it is finished
-	// now start all steppers
-	/*
-    for ( uint8_t i = 0; i < _num_steppers; i++) {
-		_steppers[i]->moveTo( _targets[i] );
-    }
-	// and wait ...
-	while ( moving() );
-	*/
-}
-	
 #ifdef debugPrint
 	// Ausgeben der Stepper-Datenchain für den IRQ
 	void MoToSyncStepper::printStepperChain() {
