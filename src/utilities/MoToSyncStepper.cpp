@@ -104,7 +104,7 @@ void MoToSyncStepper::_setStepData( long *absTarget, bool absValues  ) {
 }	
 
 bool MoToSyncStepper::move(long stepsToDo[]) {
-	if ( _stepperChainP == NULL ) return false; // there is no stepper yet
+	if ( _stepperChainP == NULL || moving() ) return false; // there is no stepper yet
 	//Prüfen, ob ein sync move möglich ist ( Keiner der betroffenen Stepper darf in Bewegung sein )
 	// relative move
     // First set all  syncData
@@ -112,7 +112,7 @@ bool MoToSyncStepper::move(long stepsToDo[]) {
 	return _startMove();
 } 	
 bool MoToSyncStepper::moveTo(long absTarget[]) {
-	if ( _stepperChainP == NULL ) return false; // there is no stepper yet
+	if ( _stepperChainP == NULL || moving() ) return false; // there is no stepper yet
 	//Prüfen, ob ein sync move möglich ist ( Keiner der betroffenen Stepper darf in Bewegung sein )
 	// absolute move
     // First set all  syncData
@@ -121,7 +121,7 @@ bool MoToSyncStepper::moveTo(long absTarget[]) {
 } 	
 	
 bool MoToSyncStepper::_startMove() {	
-	if ( moving() ) return false;					// none of the steppers must move
+	//if ( moving() ) return false;					// none of the steppers must move
 	stepperSyncData_t *tempP = _stepperChainP;		// start of chain -> pointer to first stepper
 	stepperData_t		*masterStepperDataP;		// Pointer to data of actual master
 	stepperData_t		*tmpStepperDataP;
