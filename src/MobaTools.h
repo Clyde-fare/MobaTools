@@ -228,7 +228,10 @@
  
 #include <utilities/MoToBase.h>
 #include <utilities/MoToStepper.h>
+#ifndef ARDUINO_ARCH_ESP8266
+// synced moves are not possible at ESP8266
 #include <utilities/MoToSyncStepper.h>
+#endif
 #include <utilities/MoToServo.h>
 #include <utilities/MoToSoftled.h>
 #include <utilities/MoToPwm.h>

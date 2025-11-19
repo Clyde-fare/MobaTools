@@ -24,13 +24,14 @@ public:
 	bool moving();				    				// true if any of the steppers in the group is moving.
 	void stop(bool emergency = true );				// emergency stop af all steppers ( no ramping )
 													// if emergency == false it will ramp down
+	bool syncMoveActive();							// returns true if a syncronous move is aktive
      
 private:
 	void _setStepData(long absolute[], bool absValues = true ); 	// set stepsToDo in stepperSyncData_t
 	bool _startMove();
 
     // all steppers that will run in sync are connected via a circular pointerchain.
-    stepperSyncData_t *_stepperChain;		// pointer chain of steppers in sync
+    stepperSyncData_t *_stepperChainP;		// pointer chain of steppers in sync
 	stepperSyncData_t *_masterSyncDataP;	// Sync Data of masterstepper ( set by 'setTargets' )
 
     uint8_t		_numSteppers;				// Number of steppers we are controlling

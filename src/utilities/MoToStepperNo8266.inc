@@ -250,9 +250,10 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					if ( stepperDataP->syncMode > syncStat::MASTER ) {
 						// it was a SLAVE in syncronous move, reset sync inidicators
 						// ( master mode must not be reset here, because MASTER my nee to do a last slave step later
-						stepperDataP->syncDataP = NULL;
 						stepperDataP->syncMode = syncStat::NOSYNC;
 					}
+					stepperDataP->syncDataP = NULL; // acces to syncdata is still possible later in this IRQ
+													// via locSyncDataP
 					SET_TP1;
                 }
                 // --------------- compute nexte steplength ------------------------------------

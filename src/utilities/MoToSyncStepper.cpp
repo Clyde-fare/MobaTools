@@ -11,26 +11,24 @@
 void printStepperChain();
 
 MoToSyncStepper::MoToSyncStepper()
-    : _numSteppers(0), _maxSpeed(5000), _rampLen(0)
-{
+    : _numSteppers(0), _maxSpeed(5000), _rampLen(0), _stepperChainP(NULL) {
 }
 
-boolean MoToSyncStepper::addStepper(MoToStepper& stepper)
-{
+boolean MoToSyncStepper::addStepper(MoToStepper& stepper) {
     if (_numSteppers >= MAX_STEPPER) 	return false; // No room for more
 	// Add stepper to sync-chain
 	// create new struct for new stepper at heap
 	stepperSyncData_t *tempP = new stepperSyncData_t( );
-	if ( _stepperChain == NULL ) {
+	if ( _stepperChainP == NULL ) {
 		// this is the first stepper
-		_stepperChain = tempP;
+		_stepperChainP = tempP;
 	} else {
 		// search end of chain (points to first )
-		stepperSyncData_t *lastEntryP = _stepperChain;
-		while( lastEntryP->nextSyncData != _stepperChain ) lastEntryP = lastEntryP->nextSyncData;
+		stepperSyncData_t *lastEntryP = _stepperChainP;
+		while( lastEntryP->nextSyncData != _stepperChainP ) lastEntryP = lastEntryP->nextSyncData;
 		lastEntryP->nextSyncData = tempP;
 	}
-	tempP->nextSyncData = _stepperChain;
+	tempP->nextSyncData = _stepperChainP;
 	tempP->syncStepper = &stepper;
 	tempP->stepperDataP = &stepper._stepperData; // MoToSyncStepper must be friend class of MoToStepper!!
 	_numSteppers++;
@@ -39,6 +37,7 @@ boolean MoToSyncStepper::addStepper(MoToStepper& stepper)
 }
 
 void MoToSyncStepper::setMaxSpeedSteps( uintxx_t speed10, uintxx_t rampLen ) {
+	// TODO Check limits
 	// TODO if a sync move is in motion, this sets the master speed immediately
 	_maxSpeed = speed10;
 	_rampLen = rampLen;
@@ -48,7 +47,7 @@ void MoToSyncStepper::_setStepData( long *absTarget, bool absValues  ) {
 	// first find the stepper that has to move the longest distance
 	long maxDistance = 0;
 	_masterSyncDataP = NULL; // There maybe no master if all distances are 0
-	stepperSyncData_t *tempP = _stepperChain;		// start of chain -> pointer to first stepper
+	stepperSyncData_t *tempP = _stepperChainP;		// start of chain -> pointer to first stepper
     uint8_t i;
 	long thisDistance;
 	//bool masterFound = false;
@@ -69,7 +68,7 @@ void MoToSyncStepper::_setStepData( long *absTarget, bool absValues  ) {
        DB_PRINT("setTar: i=%d, maxD=%ld, thisD=%ld", i,maxDistance,thisDistance);
 	}
 	// set distance ratio to master
-	tempP = _stepperChain;		// start of chain -> pointer to first stepper
+	tempP = _stepperChainP;		// start of chain -> pointer to first stepper
 	//DB_PRINT("compute ratio to master");
 	do {
 		// steptime ratio master -> slave
@@ -88,23 +87,24 @@ void MoToSyncStepper::_setStepData( long *absTarget, bool absValues  ) {
 			tempP->ratioCnt = ULONG_MAX;
 		}
 		tempP = tempP->nextSyncData;
-	} while ( tempP != _stepperChain ); // Until first stepper reached again.
+	} while ( tempP != _stepperChainP ); // Until first stepper reached again.
 	
 	#ifdef debugPrint
 		// Print syncdata of all steppers
 		i=0;
-		tempP = _stepperChain;		// start of chain -> pointer to first stepper
+		tempP = _stepperChainP;		// start of chain -> pointer to first stepper
 		DB_PRINT("Syncdata of steppers:");
 		do {
 			DB_PRINT("N0:%d, stepstoMove=%ld, ratio=%lu, ratioCnt=%lu", i,tempP->stepsToMove,tempP->ratioToMaster,tempP->ratioCnt); 
 			tempP = tempP->nextSyncData;
 			i++;
-		} while ( tempP != _stepperChain ); // Until first stepper reached again.
+		} while ( tempP != _stepperChainP ); // Until first stepper reached again.
 	
 	#endif
 }	
 
 bool MoToSyncStepper::move(long stepsToDo[]) {
+	if ( _stepperChainP == NULL ) return false; // there is no stepper yet
 	//Prüfen, ob ein sync move möglich ist ( Keiner der betroffenen Stepper darf in Bewegung sein )
 	// relative move
     // First set all  syncData
@@ -112,6 +112,7 @@ bool MoToSyncStepper::move(long stepsToDo[]) {
 	return _startMove();
 } 	
 bool MoToSyncStepper::moveTo(long absTarget[]) {
+	if ( _stepperChainP == NULL ) return false; // there is no stepper yet
 	//Prüfen, ob ein sync move möglich ist ( Keiner der betroffenen Stepper darf in Bewegung sein )
 	// absolute move
     // First set all  syncData
@@ -121,7 +122,7 @@ bool MoToSyncStepper::moveTo(long absTarget[]) {
 	
 bool MoToSyncStepper::_startMove() {	
 	if ( moving() ) return false;					// none of the steppers must move
-	stepperSyncData_t *tempP = _stepperChain;		// start of chain -> pointer to first stepper
+	stepperSyncData_t *tempP = _stepperChainP;		// start of chain -> pointer to first stepper
 	stepperData_t		*masterStepperDataP;		// Pointer to data of actual master
 	stepperData_t		*tmpStepperDataP;
 	if ( _masterSyncDataP == NULL ) return false; // no master - no movement
@@ -149,7 +150,7 @@ bool MoToSyncStepper::_startMove() {
 	
 	printStepperChain();	// only debugging
 	// now start all steppers
-	tempP = _stepperChain;		// start of chain -> pointer to first stepper
+	tempP = _stepperChainP;		// start of chain -> pointer to first stepper
 	DB_PRINT("Starting steppers");
 	do {
 		//DB_PRINT("N0:%d, stepstoMove=%ld, ratio=%lu, ratioCnt=%lu", i,tempP->stepsToMove,tempP->ratioToMaster,tempP->ratioCnt); 
@@ -166,25 +167,74 @@ bool MoToSyncStepper::_startMove() {
 			}
 			tempP->syncStepper->_stepperData.syncDataP = tempP;	// set pointer für sync data for use in ISR
 			// set speed of all steppers ( but only master will really move at that speed )
-			tempP->syncStepper->setSpeedSteps( _maxSpeed, _rampLen );
+			// rampLen may be adjusted if its out of limits
+			_rampLen = tempP->syncStepper->setSpeedSteps( _maxSpeed, _rampLen );
 			tempP->syncStepper->move(tempP->stepsToMove);
 		}
-	} while ( tempP != _stepperChain ); // Until first stepper reached again.
+	} while ( tempP != _stepperChainP ); // Until first stepper reached again.
 	
 	return true;
 	
 }
 
 bool MoToSyncStepper::moving() {
+	if ( _stepperChainP == NULL ) return false; // there is no stepper yet
 	int allMoving=0;
-	stepperSyncData_t *tempP = _stepperChain;		// start of chain -> pointer to first stepper
+	stepperSyncData_t *tempP = _stepperChainP;		// start of chain -> pointer to first stepper
 	do {
 		allMoving += tempP->syncStepper->moving();	
 		tempP = tempP->nextSyncData;
-	} while ( tempP != _stepperChain ); // Until first stepper reached again.
+	} while ( tempP != _stepperChainP ); // Until first stepper reached again.
 
 	return ( allMoving > 0 );
 	
+}
+
+bool MoToSyncStepper::syncMoveActive() {
+	bool syncMove = false;
+	stepperSyncData_t *tempP = _stepperChainP;	// start of chain -> pointer to first stepper
+	if ( _stepperChainP == NULL ) return false; // there is no stepper yet
+	do {
+		if ( tempP->syncStepper->_stepperData.syncDataP != NULL ) syncMove = true ;	
+		tempP = tempP->nextSyncData;
+	} while ( tempP != _stepperChainP ); // Until first stepper reached again.
+
+	return syncMove;
+}
+
+void MoToSyncStepper::stop (bool emergency ) {
+	if ( _stepperChainP == NULL ) return; 	// there is no stepper yet
+	if ( !syncMoveActive() ) return ; 		// nothing to stop
+	DB_PRINT("emergency stop %d" , emergency);
+	//stop the move
+	stepperSyncData_t *tempP = _stepperChainP;		// start of chain -> pointer to first stepper
+	do {
+		// set ratioCnt < RATIOBASE, so that master in any case creates a slave step
+		if ( emergency || _rampLen == 0 ) { // emergency stop and stop without ramp is the same
+			// set ratioCnt < RATIOBASE, so that master in any case creates the last slave step
+			_noStepIRQ();
+			if ( tempP->ratioCnt >= RATIOBASE ) tempP->ratioCnt = RATIOBASE-1;
+			_stepIRQ();
+			tempP->syncStepper->stop();	
+		} else {
+			// We want prematurely to ramp down, ramping down is controlled by master
+			// set remaining steps
+			if ( tempP->ratioToMaster == 0 ) {
+				// its the master
+				tempP->syncStepper->rotate(0);
+			} else {
+				// its a slave, set remaining steps
+				// TODO funktioniert wohl nicht, wenn während der Beschleunigungsrampe abgebrochen wird,
+				// da dann auch die Bremsrampe kürzer ist.
+				_noStepIRQ();
+				tempP->syncStepper->_stepperData.stepCnt = (_rampLen * RATIOBASE) / tempP->ratioToMaster;	
+				//DB_PRINT("Rampe=%d, RATIO=%ld, ratioMaster=%ld, stepCnt=%ld",_rampLen, RATIOBASE, tempP->ratioToMaster,  tempP->syncStepper->_stepperData.stepCnt);
+				//tempP->syncStepper->_stepperData.syncMode = syncStat::CANCELED;
+				_stepIRQ();
+			}
+		}	
+		tempP = tempP->nextSyncData;
+	} while ( tempP != _stepperChainP ); // Until first stepper reached again.
 }
 
 #ifdef debugPrint

@@ -64,7 +64,7 @@ enum class rampStat:byte { INACTIVE, STOPPED, SPEED0, STOPPING, STARTING, CRUISI
 //				when a step has been executed.
 */
 
-#define RATIOBASE 1024U		// Base of speed ratio between master and slaves. Because slave are always slower the master
+#define RATIOBASE 1024UL	// Base of speed ratio between master and slaves. Because slave are always slower the master
 							// the ratio is always greater than RATIOBASE
 							// This should always be a power of 2, to speed up the division /RATIOBASE in the ISR
 enum class syncStat:byte { NOSYNC, MASTER, SLAVE, CANCELED };
@@ -75,6 +75,7 @@ enum class syncStat:byte { NOSYNC, MASTER, SLAVE, CANCELED };
 						// CANCELED slave stepper if move is canceled prematurely, 
 						// 			master ramps down, but no fixed targets for the slaves 
 						//			they stop, if master reaches its new target-
+						
 // all steppers that will run in sync are connected via a circular pointerchain.
 struct stepperSyncData_t {			// this is a circular chain of steppers in sync
 	// per steppper data needed for synchronos move of steppers
