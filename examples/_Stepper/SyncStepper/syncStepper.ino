@@ -36,7 +36,7 @@ void setup() {
     // Add steppers to MoToSyncStepper
     mySteppers.addStepper( stepper1 );
     mySteppers.addStepper( stepper2 );
-    mySteppers.setMaxSpeedSteps(5000);
+    mySteppers.setMaxSpeedSteps(5000, 500);		// set speed and ramp
 }
 
 void loop() {

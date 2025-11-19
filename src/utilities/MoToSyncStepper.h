@@ -31,7 +31,8 @@ private:
 	bool _startMove();
 
     // all steppers that will run in sync are connected via a circular pointerchain.
-    stepperSyncData_t *_stepperChainP;		// pointer chain of steppers in sync
+    stepperSyncData_t *_stepperChainP;		// pointer chain of steppers in sync. Points to the first
+											// added Stepper ( reference for stepper order in array parameter of move/moveTo )
 	stepperSyncData_t *_masterSyncDataP;	// Sync Data of masterstepper ( set by 'setTargets' )
 
     uint8_t		_numSteppers;				// Number of steppers we are controlling
