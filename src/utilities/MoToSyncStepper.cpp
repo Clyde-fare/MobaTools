@@ -4,7 +4,7 @@
 // 
 // This software is part of the MobaTools library
 
-#define debugPrint
+//#define debugPrint
 #include <Arduino.h>
 #include <MobaTools.h>
 
@@ -36,11 +36,23 @@ boolean MoToSyncStepper::addStepper(MoToStepper& stepper) {
     return true;
 }
 
+void MoToSyncStepper::setMaxSpeedSteps( uintxx_t speed10 ) {
+	// TODO Check limits
+	// TODO if a sync move is in motion, this sets the master speed immediately
+	_maxSpeed = speed10;
+	if  ( syncMoveActive() ) {
+		_masterSyncDataP->syncStepper->setSpeedSteps( _maxSpeed );
+	}
+}
+
 void MoToSyncStepper::setMaxSpeedSteps( uintxx_t speed10, uintxx_t rampLen ) {
 	// TODO Check limits
 	// TODO if a sync move is in motion, this sets the master speed immediately
 	_maxSpeed = speed10;
 	_rampLen = rampLen;
+	if  ( syncMoveActive() ) {
+		_masterSyncDataP->syncStepper->setSpeedSteps( _maxSpeed, _rampLen );
+	}
 }
 
 void MoToSyncStepper::_setStepData( long *absTarget, bool absValues  ) {

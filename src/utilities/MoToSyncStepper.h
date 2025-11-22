@@ -16,7 +16,8 @@ public:
     MoToSyncStepper();
 
     boolean addStepper(MoToStepper& stepper);  		// Add a stepper to group of synced steppers
-	void setMaxSpeedSteps( uintxx_t speed10, uintxx_t rampLen = 0 );		// fastet speed of the motors ( in steps/10sec )
+	void setMaxSpeedSteps( uintxx_t speed10, uintxx_t rampLen );		// fastet speed of the motors ( in steps/10sec )
+	void setMaxSpeedSteps( uintxx_t speed10 );		// fastet speed of the motors ( in steps/10sec )
     bool moveTo(long absolute[]);  					// define the target positions of all steppers in group and 
 													// start the move
     bool move(long stepsToDo[]);  					// define the target positions of all steppers in group and 

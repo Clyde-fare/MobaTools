@@ -251,6 +251,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 						// it was a SLAVE in syncronous move, reset sync inidicators
 						// ( master mode must not be reset here, because MASTER my nee to do a last slave step later
 						stepperDataP->syncMode = syncStat::NOSYNC;
+						locSyncDataP->stepsToMove = 0;  // to tell the master we are finished
 					}
 					stepperDataP->syncDataP = NULL; // acces to syncdata is still possible later in this IRQ
 													// via locSyncDataP
@@ -398,27 +399,35 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					SET_TP2; 	//digitalWrite(A1, HIGH);
 					// loop through all slaves to calculate their next step
 					while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
-						if ( slavePtr->ratioCnt < RATIOBASE ) {
+						slaveStep = 0;
+						if ( slavePtr->stepsToMove != 0 ) {
 							SET_TP3;
-							// slave step is due
-							if (  stepperDataP->stepCnt > 0 ) {
-								// master still running
+							// slave has not reached its end position
+							if (  stepperDataP->stepCnt == 0 ) {
+								// Last step of master -> last chance to create a slave-step, no matter what ratioCnt is
+								stepperDataP->syncMode = syncStat::NOSYNC; // last action of master
+								// aCycSteps is not a valid steptime anymore, so use last steptime
+								slaveStep = (locSyncDataP->lastMasterSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
+								// there should be no more than 1 slave step needed
+								slavePtr->stepperDataP->stepCnt=1;
+							} else if ( slavePtr->ratioCnt < RATIOBASE ) {
+								// slave step is due
 								locSyncDataP->lastMasterSteps = stepperDataP->aCycSteps;
 								slaveStep = (stepperDataP->aCycSteps * slavePtr->ratioCnt)  / RATIOBASE +cyclesLastIRQ;
 							} else {
-								// this was the last step of master, aCycSteps is not a valid steptime anymore, so use last steptime
-								slaveStep = (locSyncDataP->lastMasterSteps * slavePtr->ratioCnt) / RATIOBASE +cyclesLastIRQ;
-								stepperDataP->syncMode = syncStat::NOSYNC; // last action of master
+								slavePtr->ratioCnt -= RATIOBASE; 
 							}
-							//if (slaveStep < MIN_STEP_CYCLE ) slaveStep = MIN_STEP_CYCLE;
-							nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
-							slavePtr->stepperDataP->aCycSteps = slaveStep;
-							slavePtr->stepperDataP->cycCnt = 0;
-							//Reset ratio counter for slave
-							slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
+							if ( slaveStep>0) {
+								// create a step for the slave
+								CLR_TP2;
+								nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
+								slavePtr->stepperDataP->aCycSteps = slaveStep;
+								slavePtr->stepperDataP->cycCnt = 0;
+								//Reset ratio counter for slave
+								slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
+								SET_TP2;
+							}
 							CLR_TP3;
-						} else {
-							slavePtr->ratioCnt -= RATIOBASE; 
 						}
 						slavePtr = slavePtr->nextSyncData; // Check next stepper until we reach our own ptr
 					}
