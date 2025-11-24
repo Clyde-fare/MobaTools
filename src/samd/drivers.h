@@ -9,18 +9,13 @@
 #define DRAM_ATTR
 #define MOTOSOFTLED32		// use 32-bit version of SoftLed class
 
-/*
-#include <libmaple/timer.h>
-#include <libmaple/spi.h>
-#include <libmaple/nvic.h>
-*/
 #define CYCLETIME       1     // Cycle count in µs on 32Bit processors
 
-#define TICS_PER_MICROSECOND (CYCLES_PER_MICROSECOND / (CLOCK_SPEED_MHZ/2) ) //  = 0.5us
-//#define TICS_PER_MICROSECOND 2 // prescaler is 36 = 0.5us
+// At Samd the internal 8MHz clock is used for the timers. Timer-Prescaler is 4 so 0,5µs per tic
+#define TICS_PER_MICROSECOND 2  
 
 // MobaTools-Timer at Samd processor
-#define MT_TIMER TIMER4     // Timer used by MobaTools
+#define TC5    // Timer used by MobaTools
 #define STEP_CHN    1       // OCR channel for Stepper and Leds
 #define TIMER_STEPCH_IRQ TIMER_CC1_INTERRUPT
 #define SERVO_CHN   2       // OCR channel for Servos

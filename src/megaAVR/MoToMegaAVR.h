@@ -55,7 +55,7 @@ static inline __attribute__((__always_inline__)) void enableServoIsrAS() {
 #define setServoCmpAS(x)		// ignore this call
 
 #endif // COMPILING_MOTOSERVO_CPP
-
+	TIMSKx = TIMSKx | 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined COMPILING_MOTOSOFTLED_CPP
 

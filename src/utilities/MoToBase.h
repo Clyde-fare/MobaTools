@@ -56,40 +56,26 @@
 	#define intxx_t	int32_t
 	#define uintx8_t uint32_t
 	#define intx8_t	int32_t
-    #define nextCycle_t int32_t
+    #define nextCycle_t uint32_t	// in CYCLETIME units ( = 1µs on 32Bit MCUs )
 #else
 	#define uintxx_t	uint16_t
 	#define  intxx_t	int16_t
 	#define uintx8_t uint8_t
 	#define intx8_t	int8_t
-    #define nextCycle_t uint8_t
+    #define nextCycle_t uint8_t	// in CYCLETIME units
     //extern uint8_t nextCycle;
 #endif
 extern nextCycle_t nextCycle;   // to be used in ISR for stepper and softled
 
 #define ISR_IDLETIME    5000        // max time between two Stepper/Softled ISRs ( µsec )
 
-// old Class names ( for compatibility with former sketches )
-#define Stepper4    MoToStepper
-#define Servo8      MoToServo  
-#define SoftLed     MoToSoftLed
-#define EggTimer    MoToTimer
-
-// defines for the stepper motor
-/*#define HALFSTEP    1
-#define FULLSTEP    2
-#define A4988       3   // using motordriver A4988
-#define FULL2Wire   4   // not yet used
-#define NOSTEP      0   // invalid-flag
-*/
-
-
 // internal defines
 
-#define TIMERPERIODE    20000   // Timer Overflow in µs
+//#define TIMERPERIODE    20000   // Timer Overflow in µs
 //#define TIMER_OVL_TICS  ( TIMERPERIODE*TICS_PER_MICROSECOND )
-constexpr uint16_t TIMER_OVL_TICS = ( TIMERPERIODE*TICS_PER_MICROSECOND );
-
+// Starting with V3.0 the timer ( allways 16-bits - apart from ESP32 ) overflows at max (0xFFFF)
+constexpr uint16_t TIMER_OVL_TICS = 0x1000;
+#define TIMERPERIODE   (TIMER_OVL_TICS / TICS_PER_MICROSECOND) // Timer Overflow in µs
 
 typedef struct {    // portaddress and bitmask for direkt pin set/reset ( only used in AVR )
    volatile uint8_t* Adr;

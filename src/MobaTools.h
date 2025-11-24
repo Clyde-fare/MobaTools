@@ -238,7 +238,7 @@
 
 #include <utilities/MoToDbg.h>
 
-#ifdef ARCHITECT_INCLUDE
+#ifdef ARCHITECT_INCLUDE		// Defined in MoToBase.h if MCU-specific includes are required.
 #include ARCHITECT_INCLUDE
 #endif
 

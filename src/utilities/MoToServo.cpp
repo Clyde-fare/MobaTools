@@ -8,14 +8,12 @@
 #define COMPILING_MOTOSERVO_CPP  // this allows servo-specific defines in includefiles
 
 //#define debugTP
-//#define debugPrint
+#define debugPrint
 #include <MobaTools.h>
 
 // Global Data for all instances and classes  --------------------------------
 // Variables for servos
 static byte servoCount = 0;
-
-
 #ifdef IS_ESP //------------------- Servo Interrupt für ESP8266 und ESP32 ----------------------
 static bool speedV08 = false;    // Compatibility-Flag for speed method
 
@@ -111,6 +109,8 @@ static servoData_t* nextPulseP = NULL;
 static enum { PON, POFF } IrqType = PON; // Cycle starts with 'pulse on'
 static uint16_t activePulseOff = 0;     // OCR-value of pulse end 
 static uint16_t nextPulseLength = 0;
+constexpr uint16_t servoCycleTics = 20000U * TICS_PER_MICROSECOND;
+static uint16_t lastIntervallStart = FIRST_PULSE;	// timervalue where last 20ms intervall started
 static bool speedV08 = true;    // Compatibility-Flag for speed method
 // create overlapping servo pulses
 // Positions of servopulses within 20ms cycle are variable, max 2 pulses at the same time
@@ -118,9 +118,10 @@ static bool speedV08 = true;    // Compatibility-Flag for speed method
 // 2.1.16 Enable interrupts after timecritical path (e.g. starting/stopping servo pulses)
 //        so other timecritical tasks can interrupt (nested interrupts)
 // 6.6.19 Because stepper IRQ now can last very long, it is disabled during servo IRQ
+// 23.22.25 no timer reset at 20ms, timer counts to max count (always 16-bit timer )
 static bool searchNextPulse() {
     //SET_TP4;
-    while ( pulseP != NULL && pulseP->soll < 0 ) {
+    while ( pulseP != NULL && pulseP->soll == INVALID ) {
         //SET_TP4;
         pulseP = pulseP->prevServoDataP;
         //CLR_TP4;
@@ -180,7 +181,7 @@ void ISR_Servo( void) {
             // next starttime must behind actual timervalue and endtime of next pulse must
             // lay after endtime of runningpuls + safetymargin (it may be necessary to start
             // another pulse between these 2 ends)
-            long tmpTCNT1 = GET_COUNT + MARGINTICS/2;
+            uint16_t tmpTCNT1 = GET_COUNT + MARGINTICS/2;
             //CLR_TP3 ;
             OCRxA = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1 );
         } else {
@@ -196,7 +197,8 @@ void ISR_Servo( void) {
             } else { // was last pulse, start over
                 pulseP = lastServoDataP;
                 nextPulseLength = 0;
-                OCRxA = FIRST_PULSE;
+                lastIntervallStart += servoCycleTics;
+				OCRxA = lastIntervallStart;
             }
         }
         //CLR_TP2; // Oszimessung Dauer der ISR-Routine OFF
@@ -234,7 +236,8 @@ void ISR_Servo( void) {
                 //TOG_TP2;
                 SET_TP3;
                 activePulseP = pulseP; 
-                activePulseOff = pulseP->ist/INC_PER_TIC + GET_COUNT - 4; // compensate for computing time
+                //3.0 activePulseOff = pulseP->ist/INC_PER_TIC + (GET_COUNT - 4); // compensate for computing time
+                activePulseOff = pulseP->ist/INC_PER_TIC + GET_COUNT; // compensate for computing time
                 if ( pulseP->on && (pulseP->offcnt+pulseP->noAutoff) > 0 ) {
                     // its a 'real' pulse, set output pin
                     #ifdef FAST_PORTWRT
@@ -282,7 +285,8 @@ void ISR_Servo( void) {
                 // there wasn't any pulse, restart
                 pulseP = lastServoDataP;
                 nextPulseLength = 0;
-                OCRxA = FIRST_PULSE;
+                lastIntervallStart += servoCycleTics;
+				OCRxA = lastIntervallStart;
             } else {
                 // is last pulse, don't start a new one
                 IrqType = POFF;
@@ -307,7 +311,7 @@ const int8_t NOT_ATTACHED = -1;
 
 MoToServo::MoToServo() //: _servoData.pin(NO_PIN),_angle(NO_ANGLE),_min16(1000/16),_max16(2000/16)
 {   _servoData.servoIx = servoCount++;
-    _servoData.soll = -1;    // = not initialized
+    _servoData.soll = INVALID;    // = not initialized
     _servoData.pin = NO_PIN;
     _servoData.pwmNbr = NOT_ATTACHED;
     _minPw = MINPULSEWIDTH ;
@@ -358,8 +362,8 @@ uint8_t MoToServo::attach( int pinArg, uint16_t pmin, uint16_t pmax, bool autoOf
     
     // intialize objectspecific data
     _lastPos = 1500*TICS_PER_MICROSECOND*INC_PER_TIC ;    // initalize to middle position
-    _servoData.soll = -1;  // invalid position -> no pulse output
-    _servoData.ist = -1;   
+    _servoData.soll = INVALID;  // invalid position -> no pulse output
+    _servoData.ist = INVALID;   
     _servoData.inc = 8000;  // means immediate movement
     _servoData.pin = pinArg;
     _servoData.on = false;  // create no pulses until next write
@@ -405,8 +409,8 @@ void MoToServo::detach()
     while( digitalRead( _servoData.pin ) ); // don't detach during an active pulse
     noInterrupts();
     _servoData.on = false;  
-    _servoData.soll = -1;  
-    _servoData.ist = -1;  
+    _servoData.soll = INVALID;  
+    _servoData.ist = INVALID;  
     interrupts();
     #ifdef ESP8266
         stopWaveformMoTo(tPin); //stop creating pulses
@@ -447,7 +451,7 @@ void MoToServo::write(uint16_t angleArg)
             newpos = time2tic( constrain( angleArg, _minPw, _maxPw ) );
             
         }
-        if ( _servoData.soll < 0 ) {
+        if ( _servoData.soll == INVALID ) {
             // Serial.println( "first write");
             // this is the first pulse to be created after attach
             _servoData.on = true;

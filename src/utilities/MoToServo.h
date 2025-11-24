@@ -28,6 +28,7 @@
                             // OFF_COUNT cycles ( = OFF_COUNT * 20ms )
 #define FIRST_PULSE     100 // first pulse starts 200 tics after timer overflow, so we do not compete
                             // with overflow IRQ
+#define INVALID			0	// Invalid Servopos ( cannot be 0 tics or µs
 
 /* Regarding servo Speed:
 One 'Speed tic' in setSpeed should be about 0.125 µs. That's not the real timer tic. So in reality the 
@@ -56,9 +57,9 @@ struct servoData_t {
   uint8_t on   :1 ;     // True: create pulse
   uint8_t noAutoff :1;  // don't switch pulses off automatically
                         // on ESP32 'soll' 'ist' and 'inc' are in duty values (  0... DUTY100 )
-  int soll;             // Position, die der Servo anfahren soll ( in Tics ). -1: not initialized
-  volatile int ist;     // Position, die der Servo derzeit einnimt ( in Tics )
-  int inc;              // Schrittweite je Zyklus um Ist an Soll anzugleichen( in Tics )
+  uint16_t soll;             // Position, die der Servo anfahren soll ( in Tics ). 0: not initialized
+  volatile uint16_t ist;     // Position, die der Servo derzeit einnimt ( in Tics )
+  uint16_t inc;              // Schrittweite je Zyklus um Ist an Soll anzugleichen( in Tics )
   uint8_t offcnt;       // counter to switch off pulses if length doesn't change
   #ifdef FAST_PORTWRT
   volatile uint8_t* portAdr;     // port adress related to pin number

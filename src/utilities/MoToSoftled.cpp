@@ -12,7 +12,7 @@
 
 #include <MobaTools.h>
 //#define debugPrint
-//#define debugTP
+#define debugTP
 #include <utilities/MoToDbg.h>
 
 // Global Data for all instances and classes  --------------------------------

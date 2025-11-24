@@ -12,8 +12,8 @@ uint8_t noStepISR_Cnt;   // Counter for nested StepISr-disable
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 // ---------- OCRxB Compare Interrupt used for stepper motor and Softleds ----------------
-void stepperISR(uint8_t cyclesLastIRQ) __attribute__ ((weak));
-void softledISR(uint8_t cyclesLastIRQ) __attribute__ ((weak));
+void stepperISR(nextCycle_t cyclesLastIRQ) __attribute__ ((weak));
+void softledISR(nextCycle_t cyclesLastIRQ) __attribute__ ((weak));
 ISR ( TIMERx_COMPB_vect) {
     uint16_t tmp;
   // Timer1 Compare B, used for stepper motor, starts every CYCLETIME us
@@ -33,7 +33,8 @@ ISR ( TIMERx_COMPB_vect) {
         // compute length of current IRQ ( which startet at OCRxB )
         // we assume a max. runtime of 1000 Tics ( = 500µs , what nevver should happen )
         tmp = GET_COUNT - OCRxB ;
-        if ( tmp > 1000 ) tmp += TIMER_OVL_TICS; // there was a timer overflow
+		// From V3.0 on timer overflow is generally at 0xFFFF. No need to cope with when using uint16_t variables
+        //if ( tmp > 1000 ) tmp += TIMER_OVL_TICS; // there was a timer overflow
         if ( tmp > (CYCLETICS-10) ) {
             // runtime was too long, next IRQ mus be started immediatly
             //SET_TP3;
@@ -41,14 +42,16 @@ ISR ( TIMERx_COMPB_vect) {
         } else {
             tmp = OCRxB + CYCLETICS;
         }
-        OCRxB = ( tmp > TIMER_OVL_TICS ) ? tmp -= TIMER_OVL_TICS : tmp ;
+        //OCRxB = ( tmp > TIMER_OVL_TICS ) ? tmp -= TIMER_OVL_TICS : tmp ;
+		OCRxB = tmp;
         //SET_TP1;
     } else {
         // time till next IRQ is more then one cycletime
-        // compute next IRQ-Time in us, not in tics, so we don't need long
-        tmp = ( OCRxB / TICS_PER_MICROSECOND + nextCycle * CYCLETIME );
-        if ( tmp > TIMERPERIODE ) tmp = tmp - TIMERPERIODE;
-        OCRxB = tmp * TICS_PER_MICROSECOND;
+        // NOT REQUIRED compute next IRQ-Time in us, not in tics, so we don't need long
+        //tmp = ( OCRxB / TICS_PER_MICROSECOND + nextCycle * CYCLETIME );
+        //if ( tmp > TIMERPERIODE ) tmp = tmp - TIMERPERIODE;
+        //OCRxB = tmp * TICS_PER_MICROSECOND;
+		OCRxB = OCRxB + nextCycle * CYCLETIME*TICS_PER_MICROSECOND;
     }
     interrupts();
     cyclesLastIRQ = nextCycle;
@@ -62,11 +65,11 @@ void seizeTimerAS() {
         uint8_t oldSREG = SREG;
         cli();
         
-        TCCRxA =0; /* CTC Mode, ICRx is TOP */
-        TCCRxB = _BV(WGMx3) | _BV(WGMx2) /* CTC Mode, ICRx is TOP */
-      | _BV(CS11) /* div 8 clock prescaler */
+        TCCRxA =0; // Normal Mode TOP is 0xFFFF
+        TCCRxB = _BV(CS11) // div 8 clock prescaler 
       ;
-        ICRx = TIMERPERIODE * TICS_PER_MICROSECOND;  // timer periode is 20000us 
+	  
+        //ICRx = TIMERPERIODE * TICS_PER_MICROSECOND;  // timer periode is 20000us 
         OCRxA = FIRST_PULSE;
         OCRxB = 400;
         // Serial.print( " Timer initialized " ); Serial.println( TIMSKx, HEX );
