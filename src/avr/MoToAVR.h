@@ -48,7 +48,7 @@ static inline __attribute__((__always_inline__)) void enableServoIsrAS() {
     TIMSKx |=  _BV(OCIExA) ; 
 }
 
-#define setServoCmpAS(x)		// ignore this call
+#define setServoCmpAS(x)  OCRxA = (x)		// set compare register for servos
 
 #endif // COMPILING_MOTOSERVO_CPP
 

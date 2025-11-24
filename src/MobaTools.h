@@ -217,8 +217,8 @@
 #define MINPULSEWIDTH   550U     // there is no general limit on ESP / RP2040
 #define MAXPULSEWIDTH   2600U    // there is no general limit on ESP / RP2040
 #else // all other ( no ESP )
-#define MINPULSEWIDTH   700U      // don't make it shorter than 700
-#define MAXPULSEWIDTH   2300U     // don't make it longer than 2300
+#define MINPULSEWIDTH   500U      // don't make it shorter than 500
+#define MAXPULSEWIDTH   2600U     // don't make it longer than 2600
 #endif
 
 // softled related defines

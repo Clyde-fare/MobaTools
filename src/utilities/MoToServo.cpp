@@ -7,8 +7,8 @@
 */
 #define COMPILING_MOTOSERVO_CPP  // this allows servo-specific defines in includefiles
 
-//#define debugTP
-#define debugPrint
+#define debugTP
+//#define debugPrint
 #include <MobaTools.h>
 
 // Global Data for all instances and classes  --------------------------------
@@ -110,6 +110,10 @@ static enum { PON, POFF } IrqType = PON; // Cycle starts with 'pulse on'
 static uint16_t activePulseOff = 0;     // OCR-value of pulse end 
 static uint16_t nextPulseLength = 0;
 constexpr uint16_t servoCycleTics = 20000U * TICS_PER_MICROSECOND;
+static uint16_t    startTime;			// Timer starttime of a 20ms cycle
+static uint16_t		edgeTime = 0;			// Time of next edge in 20ms cycle ( in timer tics, relative to starTtime
+										// edgeTime is computed independent of a timer overflow
+static uint16_t	actEdgeTime;			// time of current edge (created in this interrupt)
 static uint16_t lastIntervallStart = FIRST_PULSE;	// timervalue where last 20ms intervall started
 static bool speedV08 = true;    // Compatibility-Flag for speed method
 // create overlapping servo pulses
@@ -152,7 +156,7 @@ static bool searchNextPulse() {
 } //end of 'searchNextPulse'
 
 // ---------- OCRxA Compare Interrupt used for servo motor (overlapping pulses) ----------------
-// not for ESP processors
+// not for ESP and RP2040 processors
 #if defined ( ARDUINO_ARCH_AVR ) 
 ISR ( TIMERx_COMPA_vect) {
 #elif defined  (ARDUINO_ARCH_MEGAAVR )
@@ -160,11 +164,13 @@ ISR (TCA0_CMP0_vect) {
 	TCA0.SINGLE.INTFLAGS = TCA_SINGLE_CMP0_bm;	// Reset IRQ-flag
 #else // STM32Fx and Renesas RA4M1
 void ISR_Servo( void) {
-    uint16_t OCRxA = 0;
+    // uint16_t OCRxA = 0; -> This is a generelly only a variable now. Timer compare reg is set at end of IRQ
+	// for all processors
 #endif
-    SET_TP2;
-    CLR_TP4;
+    //SET_TP2;
+    //CLR_TP4;
     // Timer1 Compare A, used for servo motor
+	actEdgeTime = edgeTime; // This is the IRQ of tha last set edgetime
     if ( IrqType == POFF ) { // Pulse OFF time
         //SET_TP2; // Oszimessung Dauer der ISR-Routine OFF
         //SET_TP3; // Oszimessung Dauer der ISR-Routine
@@ -181,35 +187,42 @@ void ISR_Servo( void) {
             // next starttime must behind actual timervalue and endtime of next pulse must
             // lay after endtime of runningpuls + safetymargin (it may be necessary to start
             // another pulse between these 2 ends)
-            uint16_t tmpTCNT1 = GET_COUNT + MARGINTICS/2;
+            uint16_t tmpTCNT1 = actEdgeTime + MARGINTICS/2;
             //CLR_TP3 ;
-            OCRxA = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1 );
+            edgeTime = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1 );
         } else {
             // we are at the end, no need to start another pulse in this cycle
             if ( activePulseOff ) {
                 // there is still a running pulse to stop
                 //SET_TP1; // Oszimessung Dauer der ISR-Routine
-                OCRxA = activePulseOff;
+                edgeTime = activePulseOff;
                 IrqType = POFF;
                 stopPulseP = activePulseP;
                 activePulseOff = 0;
                 //CLR_TP1; // Oszimessung Dauer der ISR-Routine
             } else { // was last pulse, start over
+				SET_TP2;
                 pulseP = lastServoDataP;
                 nextPulseLength = 0;
-                lastIntervallStart += servoCycleTics;
-				OCRxA = lastIntervallStart;
+				if ( (actEdgeTime+MARGINTICS) > servoCycleTics ) {
+					// we are longer than 20ms
+					lastIntervallStart += actEdgeTime+ MARGINTICS;
+				} else {
+					lastIntervallStart += servoCycleTics;
+				}
+				edgeTime = 0;
+				CLR_TP2;
             }
         }
         //CLR_TP2; // Oszimessung Dauer der ISR-Routine OFF
-    } else { // Pulse ON - time
+    } else { // ===================   Pulse ON - time ==========================================
         //SET_TP2; // Oszimessung Dauer der ISR-Routine ON
         //if ( pulseP == lastServoDataP ) SET_TP3;
         // look for next pulse to start
         // do we know the next pulse already?
         if ( nextPulseLength > 0 ) {
             // yes we know, start this pulse and then look for next one
-            uint16_t tmpTCNT1= GET_COUNT-4; // compensate for computing time
+            uint16_t tmpTCNT1= actEdgeTime; // time of this edge
             if ( nextPulseP->on && (nextPulseP->offcnt+nextPulseP->noAutoff) > 0 ) {
                 // its a 'real' pulse, set output pin
                 //CLR_TP1;
@@ -223,7 +236,7 @@ void ISR_Servo( void) {
             // the 'nextPulse' we have started now, is from now on the 'activePulse', the running activPulse is now the
             // pulse to stop next.
             stopPulseP = activePulseP; // because there was a 'nextPulse' there is also an 'activPulse' which is the next to stop
-            OCRxA = activePulseOff;
+            edgeTime = activePulseOff;
             activePulseP = nextPulseP;
             activePulseOff = activePulseP->ist/INC_PER_TIC + tmpTCNT1; // end of actually started pulse
             nextPulseLength = 0;
@@ -234,10 +247,10 @@ void ISR_Servo( void) {
             if ( activePulseOff == 0 ) {
                 // it is the first pulse in the sequence, start it
                 //TOG_TP2;
-                SET_TP3;
+                //SET_TP3;
                 activePulseP = pulseP; 
                 //3.0 activePulseOff = pulseP->ist/INC_PER_TIC + (GET_COUNT - 4); // compensate for computing time
-                activePulseOff = pulseP->ist/INC_PER_TIC + GET_COUNT; // compensate for computing time
+                activePulseOff = pulseP->ist/INC_PER_TIC + actEdgeTime; //
                 if ( pulseP->on && (pulseP->offcnt+pulseP->noAutoff) > 0 ) {
                     // its a 'real' pulse, set output pin
                     #ifdef FAST_PORTWRT
@@ -246,7 +259,7 @@ void ISR_Servo( void) {
                     digitalWrite( pulseP->pin, HIGH );
                     #endif
                 }
-                int32_t tmpTCNT1 = GET_COUNT+ MARGINTICS/2;
+                int32_t tmpTCNT1 = actEdgeTime+ MARGINTICS/2;
                 //SET_TP3;
                 // look for second pulse
                 //SET_TP4;
@@ -260,15 +273,15 @@ void ISR_Servo( void) {
                     pulseP = pulseP->prevServoDataP;
                     //CLR_TP4;
                     // set Starttime for 2. pulse in sequence
-                    OCRxA = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1  );
+                    edgeTime = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1  );
                 } else {
                     // no next pulse, there is only one pulse
-                    OCRxA = activePulseOff;
+                    edgeTime = activePulseOff;
                     activePulseOff = 0;
                     stopPulseP = activePulseP;
                     IrqType = POFF;
                 }
-                CLR_TP3;
+                //CLR_TP3;
             } else {
                 // its a pulse in sequence, so this is the 'nextPulse'
                 nextPulseLength = pulseP->ist/INC_PER_TIC;
@@ -282,21 +295,21 @@ void ISR_Servo( void) {
             // found no pulse, so the last one is running or no pulse at all
             
             if ( activePulseOff == 0 ) {
-                // there wasn't any pulse, restart
+                // all pulses completetd or there wasn't any pulse, restart
                 pulseP = lastServoDataP;
                 nextPulseLength = 0;
                 lastIntervallStart += servoCycleTics;
-				OCRxA = lastIntervallStart;
+				edgeTime = 0; // start a new 20ms periode
             } else {
-                // is last pulse, don't start a new one
+                // is last pulse, don't start a new one, only stp the current one
                 IrqType = POFF;
             }
         }
         //CLR_TP2; CLR_TP3; // Oszimessung Dauer der ISR-Routine ON
     } //end of 'pulse ON'
-	setServoCmpAS(OCRxA);	// set Servo-compare register
+	setServoCmpAS(edgeTime+lastIntervallStart);	// set Servo-compare register
     //CLR_TP1; CLR_TP3; // Oszimessung Dauer der ISR-Routine
-    CLR_TP2;
+    //CLR_TP2;
 }
 
 #endif // not ESP or RP2040
@@ -472,11 +485,11 @@ void MoToServo::write(uint16_t angleArg)
         }
         #ifdef IS_ESP // start creating pulses?
             if ( (startPulse) || (_servoData.offcnt+_servoData.noAutoff) == 0  ) {
-                SET_TP3;
+                //SET_TP3;
                 // first pulse after attach, or pulses have been switch off by autoff
                 startServoPulse( &_servoData, _servoData.ist/INC_PER_TIC);
                 DB_PRINT( "start pulses at pin %d, ist=%d, soll=%d", _servoData.pin, _servoData.ist, _servoData.soll );
-                CLR_TP3;
+                //CLR_TP3;
             }
         #endif
         _servoData.offcnt = OFF_COUNT;   // auf jeden Fall wieder Pulse ausgeben
