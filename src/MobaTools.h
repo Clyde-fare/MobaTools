@@ -216,9 +216,11 @@
 #if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266 || defined ARDUINO_ARCH_RP2040
 #define MINPULSEWIDTH   550U     // there is no general limit on ESP / RP2040
 #define MAXPULSEWIDTH   2600U    // there is no general limit on ESP / RP2040
-#else // all other ( no ESP )
-#define MINPULSEWIDTH   500U      // don't make it shorter than 500
-#define MAXPULSEWIDTH   2600U     // don't make it longer than 2600
+#else // all other 
+#define MINPULSEWIDTH   600U      // don't make it shorter than 550 µs  (lower values mean less time between 
+								  // servo-interrupts, even if you don't really use that min pulse length)
+#define MAXPULSEWIDTH   2600U     // don't make it longer than 3000 µs. Higher values may lead to more than 20ms
+								  // between pulses
 #endif
 
 // softled related defines

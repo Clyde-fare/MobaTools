@@ -9,15 +9,19 @@
 */
 
 /* Some definitions for the servo class: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	increments (INC) is the internal timebase for all time computing ( it's a virtual value ). All time values ( e.g. pulselength ) are internally stored based on this value.
+	Increments (INC) is the internal timebase for all time computing regarding servo move( it's a virtual value ). 
+	The time values 'soll' and 'ist' for the pulselength are internally stored based on this value. This allows
+	finer increments when moving the servo.
 	tics (TIC) ist the physical resolutin of the servo timer. This must always be an integer multiple of INC.
+	ATTENTION - because of historical reasons time2tic() and tic2time have wrong names. In reality these work as
+	time2inc and inc2time.
 */
 
 // defines for servos
-#define Servo2	MoToServo		// Kompatibilität zu Version 01 und 02
 #define AUTOOFF 1               // 2nd Parameter for servo.attach to switch off pulses in standstill
-#define OVLMARGIN           280     // Overlap margin ( Overlap is MINPULSEWIDTH - OVLMARGIN )
-//#define OVL_TICS       ( ( MINPULSEWIDTH - OVLMARGIN ) * TICS_PER_MICROSECOND )
+//#define OVLMARGIN           200     // Overlap margin in µs ( min pulsewidth must be at least 3 * OVLMARGIN )
+									// this is effectively the minimum time between 2 servo interrupts
+#define OVLMARGIN        (MINPULSEWIDTH/3-1)									
 #define MARGINTICS      ( OVLMARGIN * TICS_PER_MICROSECOND )
 #define MAX_SERVOS  16  
 
@@ -28,10 +32,10 @@
                             // OFF_COUNT cycles ( = OFF_COUNT * 20ms )
 #define FIRST_PULSE     100 // first pulse starts 200 tics after timer overflow, so we do not compete
                             // with overflow IRQ
-#define INVALID			0	// Invalid Servopos ( cannot be 0 tics or µs
+#define INVALID			0	// Invalid Servopos ( cannot be 0 tics, incs or µs )
 
 /* Regarding servo Speed:
-One 'Speed tic' in setSpeed should be about 0.125 µs. That's not the real timer tic. So in reality the 
+One 'Speed increments' in setSpeed should be about 0.125 µs. That's not the real timer tic. So in reality the 
 pulse length may not change with every cycle (20ms). But this way speedresolution is independent from real timer tics and boards.
 Pulse length are always stored in inc. Only when creating the real pulse ( in IRQ ) this value is devided by INC_PER_TIC to get the real 'timer tics' ( this is different for ESP )
  All position values in tics are multiplied by this factor.  Only when computing the next interrupt time 
@@ -42,7 +46,7 @@ Pulse length are always stored in inc. Only when creating the real pulse ( in IR
  INC_PER_TIC		  ( increments per timer tic ) is an integer value.
  AS_Speed2Inc(speed)  mostly returns simply speed, but if INC_PER_MICROSECOND is not 8, it is different.
  time2tic(pulse)	  returns increments (pulsewidth in µs)
- tic2time(tics)		  returns pulswidth in  µs
+ tic2time(inc)		  returns pulswidth in  µs, parameter is increments
  
  These defines are different for ESP8266 and ESP32, because these boards don't use the standard timer IRQ of all other boards ( see board specific .h files ).
 
@@ -57,8 +61,8 @@ struct servoData_t {
   uint8_t on   :1 ;     // True: create pulse
   uint8_t noAutoff :1;  // don't switch pulses off automatically
                         // on ESP32 'soll' 'ist' and 'inc' are in duty values (  0... DUTY100 )
-  uint16_t soll;             // Position, die der Servo anfahren soll ( in Tics ). 0: not initialized
-  volatile uint16_t ist;     // Position, die der Servo derzeit einnimt ( in Tics )
+  uint16_t soll;             // Target position that the servo should move to ( in increments ). 0: not initialized
+  volatile uint16_t ist;     // actual Position of the servo ( increments )
   uint16_t inc;              // Schrittweite je Zyklus um Ist an Soll anzugleichen( in Tics )
   uint8_t offcnt;       // counter to switch off pulses if length doesn't change
   #ifdef FAST_PORTWRT

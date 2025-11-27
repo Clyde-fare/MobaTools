@@ -7,7 +7,7 @@
 */
 #define COMPILING_MOTOSERVO_CPP  // this allows servo-specific defines in includefiles
 
-#define debugTP
+//#define debugTP
 //#define debugPrint
 #include <MobaTools.h>
 
@@ -110,11 +110,10 @@ static enum { PON, POFF } IrqType = PON; // Cycle starts with 'pulse on'
 static uint16_t activePulseOff = 0;     // OCR-value of pulse end 
 static uint16_t nextPulseLength = 0;
 constexpr uint16_t servoCycleTics = 20000U * TICS_PER_MICROSECOND;
-static uint16_t    startTime;			// Timer starttime of a 20ms cycle
-static uint16_t		edgeTime = 0;			// Time of next edge in 20ms cycle ( in timer tics, relative to starTtime
+static uint16_t		edgeTime = 0;		// Time of next edge in 20ms cycle ( in timer tics, relative to starTtime
 										// edgeTime is computed independent of a timer overflow
 static uint16_t	actEdgeTime;			// time of current edge (created in this interrupt)
-static uint16_t lastIntervallStart = FIRST_PULSE;	// timervalue where last 20ms intervall started
+static uint16_t lastIntervallStart = 0;	// timervalue where last 20ms intervall started
 static bool speedV08 = true;    // Compatibility-Flag for speed method
 // create overlapping servo pulses
 // Positions of servopulses within 20ms cycle are variable, max 2 pulses at the same time
@@ -122,7 +121,7 @@ static bool speedV08 = true;    // Compatibility-Flag for speed method
 // 2.1.16 Enable interrupts after timecritical path (e.g. starting/stopping servo pulses)
 //        so other timecritical tasks can interrupt (nested interrupts)
 // 6.6.19 Because stepper IRQ now can last very long, it is disabled during servo IRQ
-// 23.22.25 no timer reset at 20ms, timer counts to max count (always 16-bit timer )
+// 23.22.25 no timer reset at 20ms, timer overflows at max count (always 16-bit timer )
 static bool searchNextPulse() {
     //SET_TP4;
     while ( pulseP != NULL && pulseP->soll == INVALID ) {
@@ -134,24 +133,28 @@ static bool searchNextPulse() {
     if ( pulseP == NULL ) {
         // there is no more pulse to start, we reached the end
         //CLR_TP4;
-        return false;
+        return false; //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> no more pulses to output
     } else { // found pulse to output
         //SET_TP2;
         if ( pulseP->ist == pulseP->soll ) {
-            // no change of pulselength
+            // no change of pulselength, servo doesn't move
             if ( pulseP->offcnt > 0 ) pulseP->offcnt--;
-        } else if ( pulseP->ist < pulseP->soll ) {
-            pulseP->offcnt = OFF_COUNT;
-            if ( pulseP->ist < 0 ) pulseP->ist = pulseP->soll; // first position after attach
-            else pulseP->ist += pulseP->inc;
-            if ( pulseP->ist > pulseP->soll ) pulseP->ist = pulseP->soll;
         } else {
+			// Servo is still moving  
             pulseP->offcnt = OFF_COUNT;
-            pulseP->ist -= pulseP->inc;
-            if ( pulseP->ist < pulseP->soll ) pulseP->ist = pulseP->soll;
-        } 
+			 if ( pulseP->ist < pulseP->soll ) {
+				// increasing pulse length
+				if ( pulseP->ist == INVALID ) pulseP->ist = pulseP->soll; // first position after attach
+				else pulseP->ist += pulseP->inc;
+				if ( pulseP->ist > pulseP->soll ) pulseP->ist = pulseP->soll;
+			} else {
+				//decreasing pulse length
+				if ( (pulseP->ist-pulseP->soll) > pulseP->inc ) pulseP->ist -= pulseP->inc;
+				else pulseP->ist = pulseP->soll;
+			}
+		}
         //CLR_TP4;
-        return true;
+        return true; //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> still a pulse to output
     } 
 } //end of 'searchNextPulse'
 
@@ -187,9 +190,10 @@ void ISR_Servo( void) {
             // next starttime must behind actual timervalue and endtime of next pulse must
             // lay after endtime of runningpuls + safetymargin (it may be necessary to start
             // another pulse between these 2 ends)
-            uint16_t tmpTCNT1 = actEdgeTime + MARGINTICS/2;
+            uint16_t tmpTCNT1 = actEdgeTime + MARGINTICS;// /2; // min time between two edges ( = min time between IRQ's )
             //CLR_TP3 ;
-            edgeTime = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1 );
+            //edgeTime = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1 );
+            edgeTime = max ( (activePulseOff +  2*MARGINTICS -  nextPulseLength), tmpTCNT1 ); //V3
         } else {
             // we are at the end, no need to start another pulse in this cycle
             if ( activePulseOff ) {
@@ -259,7 +263,8 @@ void ISR_Servo( void) {
                     digitalWrite( pulseP->pin, HIGH );
                     #endif
                 }
-                int32_t tmpTCNT1 = actEdgeTime+ MARGINTICS/2;
+                //int32_t tmpTCNT1 = actEdgeTime+ MARGINTICS/2;
+                uint16_t tmpTCNT1 = actEdgeTime+ MARGINTICS;///2;
                 //SET_TP3;
                 // look for second pulse
                 //SET_TP4;
@@ -273,7 +278,8 @@ void ISR_Servo( void) {
                     pulseP = pulseP->prevServoDataP;
                     //CLR_TP4;
                     // set Starttime for 2. pulse in sequence
-                    edgeTime = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1  );
+                    //edgeTime = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1  );
+                    edgeTime = max ( (activePulseOff +  2*MARGINTICS -  nextPulseLength), tmpTCNT1  ); //V3
                 } else {
                     // no next pulse, there is only one pulse
                     edgeTime = activePulseOff;
@@ -410,7 +416,7 @@ uint8_t MoToServo::attach( int pinArg, uint16_t pmin, uint16_t pmax, bool autoOf
         }
          interrupts();
     #endif // no ESP8266
-    DB_PRINT("OVLMARGIN=%d, OVL_TICS=%d, MARGINTICS=%d, SPEEDRES=%d, TPM4=%d", (int16_t) OVLMARGIN, (int16_t)OVL_TICS, (int16_t)MARGINTICS, (int16_t)INC_PER_TIC, (int)(TICS_PER_MICROSECOND*4) );
+    //DB_PRINT("OVLMARGIN=%d, OVL_TICS=%d, MARGINTICS=%d, SPEEDRES=%d, TPM4=%d", (int16_t) OVLMARGIN, (int16_t)OVL_TICS, (int16_t)MARGINTICS, (int16_t)INC_PER_TIC, (int)(TICS_PER_MICROSECOND*4) );
     //return ( _servoData.pwmNbr >= 0 );
     return ( _servoData.pwmNbr +1 );
 }
@@ -444,7 +450,7 @@ void MoToServo::write(uint16_t angleArg)
 {   // set position to move to
     // values between 0 and 180 are interpreted as degrees,
     // values between MINPULSEWIDTH and MAXPULSEWIDTH are interpreted as microseconds
-    static int newpos;
+    static uint16_t newpos;
     bool startPulse = false;    // only for esp8266
     //SET_TP1;
     #ifdef ARDUINO_ARCH_AVR
@@ -495,8 +501,8 @@ void MoToServo::write(uint16_t angleArg)
         _servoData.offcnt = OFF_COUNT;   // auf jeden Fall wieder Pulse ausgeben
     }
     //DB_PRINT( "Soll=%d, Ist=%d, Ix=%d, inc=%d, SR=%d, Duty100=%d, LEDC_BITS=%d", _servoData.soll,_servoData.ist, _servoData.servoIx, _servoData.inc, INC_PER_TIC, DUTY100, LEDC_BITS );
-    DB_PRINT( "Soll=%d, Ist=%d, Ix=%d, inc=%d, SR=%d", _servoData.soll,_servoData.ist, _servoData.servoIx, _servoData.inc, (int)INC_PER_TIC );
-	DB_PRINT( "t2tic=%d, tic2t=%d", (int)time2tic(map( angleArg, 0,180, _minPw, _maxPw)), (int)tic2time(_servoData.soll ) );
+    DB_PRINT( "Soll=%u, Ist=%d, Ix=%d, inc=%d, SR=%d", _servoData.soll,_servoData.ist, _servoData.servoIx, _servoData.inc, (int)INC_PER_TIC );
+	DB_PRINT( "t2tic=%u, tic2t=%u", (int)time2tic(map( angleArg, 0,180, _minPw, _maxPw)), (int)tic2time(_servoData.soll ) );
     //delay(2);
     //CLR_TP1;
 }
@@ -506,11 +512,11 @@ void MoToServo::write(uint16_t angleArg)
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 void MoToServo::setSpeedTime(uint16_t minMaxTime ) {
 	// Set speed as time (in milliseconds) needed when moving from 0° ... 180°
-	uint16_t maxTics = 8* ( _maxPw - _minPw );	//	tics are counted in 0.125 µs	
-	uint16_t speedCycles = minMaxTime / 20;	// Nbr of pulses needed from 0° to 180°
+	uint16_t maxIncs = INC_PER_MICROSECOND * ( _maxPw - _minPw );	//	incs needed from min to max	
+	uint16_t speedCycles = minMaxTime / 20;	// Nbr of pulses  (=20ms cycles) needed from 0° to 180°
 	if ( speedCycles == 0 ) speedCycles = 1;	// Avoid divide by zero
-	uint16_t speedTics = maxTics / speedCycles;
-	setSpeed( speedTics, HIGHRES );	// no compatibility mode, when new speed method is used
+	uint16_t speedIncs = maxIncs / speedCycles;
+	setSpeed( speedIncs, HIGHRES );	// no compatibility mode, when new speed method is used
 	DB_PRINT(" IPM=%d, TPM=%d", INC_PER_MICROSECOND, TICS_PER_MICROSECOND );
 }
 	
@@ -528,13 +534,15 @@ void MoToServo::setSpeed( int speed, bool compatibility ) {
 void MoToServo::setSpeed( int speed ) {
     // Set increment value for movement to new angle
     // 'speed' is 0,125µs increment per 20ms
+	uint16_t maxSpeed = (_maxPw -_minPw  ) * INC_PER_MICROSECOND ; // to change from min to max in one step
+	Serial.println(maxSpeed);
     if ( _servoData.pwmNbr != NOT_ATTACHED ) { // only if servo is attached
-        if ( speedV08 ) speed *= COMPAT_FACT;
-        speed = constrain(  speed, 0, 8000 );  // 8000 means immediate movement, greater values make no sense
+        //if ( speedV08 ) speed *= COMPAT_FACT; // no compatibility mode from V3 on
+        speed = constrain(  speed, 0, maxSpeed );  // 16000 means immediate movement, greater values make no sense
                                         // Greater Values will also lead to an overflow on ESP32
         noInterrupts();
         if ( speed == 0 )
-            _servoData.inc = AS_Speed2Inc(8000);  // means immediate movement
+            _servoData.inc = AS_Speed2Inc(maxSpeed);  // means immediate movement
         else
             _servoData.inc = AS_Speed2Inc(speed);
         interrupts();
@@ -543,20 +551,18 @@ void MoToServo::setSpeed( int speed ) {
 
 uint8_t MoToServo::read() {
     // get position in degrees
-    int offset;
     if ( _servoData.pwmNbr == NOT_ATTACHED ) return -1; // Servo not attached
-    offset = (_maxPw - _minPw)/180/2;
-    return map( readMicroseconds() + offset, _minPw, _maxPw, 0, 180 );
+    return map( readMicroseconds(), _minPw, _maxPw, 0, 180 );
 }
 
 uint16_t MoToServo::readMicroseconds() {
     // get position in microseconds
-    int value;
+    uint16_t value;
     if ( _servoData.pwmNbr == NOT_ATTACHED ) return -1; // Servo not attached
     noInterrupts();
     value = _servoData.ist;
     interrupts();
-    if ( value < 0 ) value = _servoData.soll; // there is no valid actual vlaue
+    if ( value == INVALID ) value = _servoData.soll; // there is no valid actual vlaue
     //DB_PRINT( "Ist=%d, Soll=%d, TpM=%d, SR=%d", value, _servoData.soll, TICS_PER_MICROSECOND, INC_PER_TIC );
     return tic2time( value );   
 }
