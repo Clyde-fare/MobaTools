@@ -1,9 +1,9 @@
 // STM32F1 HW-spcific Functions
-#ifdef ARDUINO_ARCH_STM32F4
+#ifdef ARDUINO_ARCH_SAMD
 #define bool int
-#include <stm32f4/drivers.h>
+#include <samd/drivers.h>
 
-//#warning "HW specfic - STM32F4 ---"
+//#warning "HW specfic - Samd21 ---"
 
 
 #endif

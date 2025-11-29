@@ -7,8 +7,8 @@
 
   Base definitions and declarations for all parts of MobaTools
 */
-#include <inttypes.h>
 #include <Arduino.h>
+#include <inttypes.h>
 #include <limits.h>
 
 //architecture specific includes
@@ -32,6 +32,8 @@
 	#include <ra4m1/drivers.h>
 #elif defined ARDUINO_ARCH_RP2040
 	#include <rp2040/drivers.h>
+#elif defined ARDUINO_ARCH_SAMD 
+	#include <samd/drivers.h>
 #else
     #error "Processor not supported"
 #endif
