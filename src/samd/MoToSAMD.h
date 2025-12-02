@@ -41,6 +41,7 @@ constexpr uint8_t INC_PER_TIC = INC_PER_MICROSECOND / TICS_PER_MICROSECOND;
 
 static inline __attribute__((__always_inline__)) void enableServoIsrAS() {
 	// Enable timer compare IRQ for servos
+	NVIC_EnableIRQ(TCx_IRQn);
 	MtcP->INTENSET.reg = SERVO_INT_MSK;
 }
 

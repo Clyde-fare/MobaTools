@@ -113,7 +113,7 @@ constexpr uint16_t servoCycleTics = 20000U * TICS_PER_MICROSECOND;
 static uint16_t		edgeTime = 0;		// Time of next edge in 20ms cycle ( in timer tics, relative to starTtime
 										// edgeTime is computed independent of a timer overflow
 static uint16_t	actEdgeTime;			// time of current edge (created in this interrupt)
-static uint16_t lastIntervallStart = 0;	// timervalue where last 20ms intervall started
+static uint16_t servoCycleStart = 0;	// timervalue where active 20ms cycle started
 static bool speedV08 = true;    // Compatibility-Flag for speed method
 // create overlapping servo pulses
 // Positions of servopulses within 20ms cycle are variable, max 2 pulses at the same time
@@ -165,7 +165,7 @@ ISR ( TIMERx_COMPA_vect) {
 #elif defined  (ARDUINO_ARCH_MEGAAVR )
 ISR (TCA0_CMP0_vect) {
 	TCA0.SINGLE.INTFLAGS = TCA_SINGLE_CMP0_bm;	// Reset IRQ-flag
-#else // STM32Fx and Renesas RA4M1
+#else // STM32Fx Samd  and Renesas RA4M1
 void ISR_Servo( void) {
     // uint16_t OCRxA = 0; -> This is a generelly only a variable now. Timer compare reg is set at end of IRQ
 	// for all processors
@@ -173,7 +173,7 @@ void ISR_Servo( void) {
     //SET_TP2;
     //CLR_TP4;
     // Timer1 Compare A, used for servo motor
-	actEdgeTime = edgeTime; // This is the IRQ of tha last set edgetime
+	actEdgeTime = edgeTime; // We are in the IRQ of tha last set edgetime
     if ( IrqType == POFF ) { // Pulse OFF time
         //SET_TP2; // Oszimessung Dauer der ISR-Routine OFF
         //SET_TP3; // Oszimessung Dauer der ISR-Routine
@@ -193,7 +193,8 @@ void ISR_Servo( void) {
             uint16_t tmpTCNT1 = actEdgeTime + MARGINTICS;// /2; // min time between two edges ( = min time between IRQ's )
             //CLR_TP3 ;
             //edgeTime = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1 );
-            edgeTime = max ( (activePulseOff +  2*MARGINTICS -  nextPulseLength), tmpTCNT1 ); //V3
+			if ( nextPulseLength > activePulseOff +  2*MARGINTICS ) edgeTime = tmpTCNT1;
+            else edgeTime = max ( (activePulseOff +  2*MARGINTICS -  nextPulseLength), tmpTCNT1 ); //V3
         } else {
             // we are at the end, no need to start another pulse in this cycle
             if ( activePulseOff ) {
@@ -205,17 +206,17 @@ void ISR_Servo( void) {
                 activePulseOff = 0;
                 //CLR_TP1; // Oszimessung Dauer der ISR-Routine
             } else { // was last pulse, start over
-				SET_TP2;
+				//SET_TP2;
                 pulseP = lastServoDataP;
                 nextPulseLength = 0;
 				if ( (actEdgeTime+MARGINTICS) > servoCycleTics ) {
 					// we are longer than 20ms
-					lastIntervallStart += actEdgeTime+ MARGINTICS;
+					servoCycleStart += actEdgeTime+ MARGINTICS;
 				} else {
-					lastIntervallStart += servoCycleTics;
+					servoCycleStart += servoCycleTics;
 				}
 				edgeTime = 0;
-				CLR_TP2;
+				//CLR_TP2;
             }
         }
         //CLR_TP2; // Oszimessung Dauer der ISR-Routine OFF
@@ -279,7 +280,8 @@ void ISR_Servo( void) {
                     //CLR_TP4;
                     // set Starttime for 2. pulse in sequence
                     //edgeTime = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1  );
-                    edgeTime = max ( (activePulseOff +  2*MARGINTICS -  nextPulseLength), tmpTCNT1  ); //V3
+					if ( nextPulseLength > activePulseOff +  2*MARGINTICS ) edgeTime = tmpTCNT1;
+                    else edgeTime = max ( (activePulseOff +  2*MARGINTICS -  nextPulseLength), tmpTCNT1  ); //V3
                 } else {
                     // no next pulse, there is only one pulse
                     edgeTime = activePulseOff;
@@ -304,7 +306,7 @@ void ISR_Servo( void) {
                 // all pulses completetd or there wasn't any pulse, restart
                 pulseP = lastServoDataP;
                 nextPulseLength = 0;
-                lastIntervallStart += servoCycleTics;
+                servoCycleStart += servoCycleTics;
 				edgeTime = 0; // start a new 20ms periode
             } else {
                 // is last pulse, don't start a new one, only stp the current one
@@ -313,7 +315,7 @@ void ISR_Servo( void) {
         }
         //CLR_TP2; CLR_TP3; // Oszimessung Dauer der ISR-Routine ON
     } //end of 'pulse ON'
-	setServoCmpAS(edgeTime+lastIntervallStart);	// set Servo-compare register
+	setServoCmpAS(edgeTime+servoCycleStart);	// set Servo-compare register
     //CLR_TP1; CLR_TP3; // Oszimessung Dauer der ISR-Routine
     //CLR_TP2;
 }
@@ -407,7 +409,9 @@ uint8_t MoToServo::attach( int pinArg, uint16_t pmin, uint16_t pmax, bool autoOf
         DB_PRINT("pwmNbr=%d, Pin=%d", _servoData.pwmNbr, _servoData.pin );
         
     #else // create servo pulses in timer ISR
+		//DB_PRINT("Init Timer");
         seizeTimerAS();
+		//DB_PRINT("Timer initialized");
         // initialize servochain pointer and ISR if not done already
         noInterrupts();
         if ( pulseP == NULL ) {
@@ -535,7 +539,6 @@ void MoToServo::setSpeed( int speed ) {
     // Set increment value for movement to new angle
     // 'speed' is 0,125µs increment per 20ms
 	uint16_t maxSpeed = (_maxPw -_minPw  ) * INC_PER_MICROSECOND ; // to change from min to max in one step
-	Serial.println(maxSpeed);
     if ( _servoData.pwmNbr != NOT_ATTACHED ) { // only if servo is attached
         //if ( speedV08 ) speed *= COMPAT_FACT; // no compatibility mode from V3 on
         speed = constrain(  speed, 0, maxSpeed );  // 16000 means immediate movement, greater values make no sense

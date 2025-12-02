@@ -59,6 +59,8 @@
 	#define uintx8_t uint32_t
 	#define intx8_t	int32_t
     #define nextCycle_t uint32_t	// in CYCLETIME units ( = 1µs on 32Bit MCUs )
+	#define MIN_TIC_DIFF 90 // minimal time between 2 interrupts ( in tics )
+
 #else
 	#define uintxx_t	uint16_t
 	#define  intxx_t	int16_t

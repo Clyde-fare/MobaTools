@@ -205,11 +205,11 @@
 #elif defined ARDUINO_ARCH_SAMD ////////////////////////////////////////////////////////
 	#define MIN_STEP_CYCLE  80       // Minimum number of µsec  per Step
 	#define IRQ_PRIO 3				// NVIC priority. There are only 4 different level (0...3)
-									// Lower priority ( higher value) will lead to problems on R4 WiFi 
+									// Lower priority = higher value
 									// with WiFi active
 	#define MT_TIMER 5			// Timer used by MobaTools ( 3,4,5 selecting TC3, TC4 or TC5  is possible)
 								// TC5 is default if the number is invalid or not set
-								// Be aware that always to timer ( TCC2/TC3 and TC4/TC5 ) share a common clock source
+								// Be aware that always two timer ( TCC2/TC3 and TC4/TC5 ) share a common clock source
 #else ///////////////////////////////////////////////////////////////////////////////////
     #error Processor not supported
 #endif //////////////////////////////////////////////////////////////////////////////////

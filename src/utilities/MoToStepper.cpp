@@ -8,7 +8,7 @@
 #define COMPILING_MOTOSTEPPER_CPP
 
 #define debugTP
-//#define debugPrint
+#define debugPrint
 #include <MobaTools.h>
 #define TODO	// ignore 
 // Global Data for all instances and classes  --------------------------------
@@ -25,7 +25,6 @@
 // Class-specific Variables
 outUsed_t MoToStepper::outputsUsed;
 byte MoToStepper::_stepperCount = 0;
-
 // global functions / Interrupts
 
 // Functions and ISR's that are completely different between ESP8266 and the other platforms
@@ -760,7 +759,7 @@ uint8_t MoToStepper::moving() { //##############################################
 void MoToStepper::rotate(int8_t direction) { //##################################################################
 	// rotate endless ( not really, do maximum stepcount ;-)
     if ( _stepperData.output == NO_OUTPUT ) return; // not attached
-    
+    DB_PRINT("rotate %d",direction);
 	if (direction == 0 ) {
         if ( _stepperData.stepRampLen == 0 ) {
             // no ramp, identical to 'stop'

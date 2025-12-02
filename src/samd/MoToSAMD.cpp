@@ -1,32 +1,41 @@
 // SamD21 HW-spcific Functions
 #ifdef ARDUINO_ARCH_SAMD
 
+#define debugTP
+
 #include <MobaTools.h>
-//#define debugTP
-//#define debugPrint
-#include <utilities/MoToDbg.h>
 
 //#warning "HW specfic - Samd ---"
-TcCount16 *MtcP = (TcCount16 *)MT_TIMER;	// Pointer to regs of used timer
+TcCount16 *MtcP = (TcCount16 *)TCx;	// Pointer to regs of used timer
 uint8_t noStepISR_Cnt = 0;   // Counter for nested StepISr-disable
 
-void stepperISR(int32_t cyclesLastIRQ)  __attribute__ ((weak));
-void softledISR(uint32_t cyclesLastIRQ)  __attribute__ ((weak));
+void stepperISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
+void softledISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
 void ISR_Stepper();
 
-void MT_Handler() {
+void TCx_Handler() {
 	// This is the IRQ-Handler for the timer used by MobaTools ( for Stepper, Softled and Servo  )
+	SET_TP1; // to measure time in ISR
     if (MtcP->INTFLAG.reg & STEP_INT_MSK ) 
-    {	// was  compare interrupt for steppers
+    {	// was  compare interrupt for steppers and Softleds
 		ISR_Stepper();
         MtcP->INTFLAG.reg = STEP_INT_MSK; // Acknowledge stepper interrupt by setting maskbit
     }
     if (MtcP->INTFLAG.reg & SERVO_INT_MSK) // was  compare interrupt for servos
     {
-		ISR_Servo();
+		//ISR_Servo();
         MtcP->INTFLAG.reg = SERVO_INT_MSK; // Acknowledge servo interrupt
     }
-	
+	/*// only debugging:
+    if (MtcP->INTFLAG.reg & TC_INTFLAG_OVF) // was timer overflow 
+    {	
+		SET_TP2;
+		MtcP->INTENSET.reg = TC_INTFLAG_OVF;
+		MtcP->INTFLAG.reg = TC_INTFLAG_OVF; // Acknowledge servo interrupt
+		CLR_TP2;
+    }
+	*/
+	CLR_TP1; 
 	
 }
 nextCycle_t nextCycle;
@@ -34,29 +43,25 @@ static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 void ISR_Stepper() {
     // TCn Channel 1, used for stepper motor and softleds, starts every nextCycle us
     // nextCycle ist set in stepperISR and softledISR
-    SET_TP1;
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
     if ( stepperISR ) stepperISR(cyclesLastIRQ);
     //============  End of steppermotor ======================================
     if ( softledISR ) softledISR(cyclesLastIRQ);
     // ======================= end of softleds =====================================
     // set compareregister to next interrupt time;
-	// next ISR must be at least MIN_STEP_CYCLE/4 beyond actual counter value ( time between to ISR's )
-	uint16_t minOCR = MtcP->COUNT.reg;
-	uint16_t nextOCR = MtcP->CC[0].reg;  // cc0 = Step cmp
-	//if ( minOCR < nextOCR ) minOCR += 0x10000; // timer had overflow already
-    minOCR = minOCR + ( (MIN_STEP_CYCLE/4) * TICS_PER_MICROSECOND ); // minimumvalue for next OCR
-	nextOCR = nextOCR + ( nextCycle * TICS_PER_MICROSECOND );
-	if ( nextOCR < minOCR ) {
-		// time till next ISR ist too short, set to mintime and adjust nextCycle
+	// next ISR must be at least MIN_TIC_DIFF beyond actual counter value ( time between two ISR's )
+	uint16_t add2Ocr = nextCycle * TICS_PER_MICROSECOND; // tics to add to current compare reg
+	CLR_TP1;
+	uint16_t minDiff = (MtcP->COUNT.reg+MIN_TIC_DIFF) - MtcP->CC[0].reg;
+	if (  minDiff >= add2Ocr ) {
+		// counter is already too far
         SET_TP2;
-		nextOCR = minOCR;
-		nextCycle = ( nextOCR - MtcP->CC[0].reg  ) / TICS_PER_MICROSECOND;
+		add2Ocr = minDiff;
+		nextCycle = add2Ocr / TICS_PER_MICROSECOND;
         CLR_TP2;
 	}
-    MtcP->CC[0].reg =  (uint16_t)nextOCR ;
+    MtcP->CC[0].reg =  MtcP->CC[0].reg + add2Ocr ;
     cyclesLastIRQ = nextCycle;
-    CLR_TP1; // Oszimessung Dauer der ISR-Routine
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
 void seizeTimerAS() {
@@ -80,13 +85,13 @@ void seizeTimerAS() {
 
 		// Enable InterruptVector
 		NVIC_EnableIRQ(TCx_IRQn);
+		NVIC_SetPriority(TCx_IRQn,0);
 
-		// Enable the compare interrupt
 		// Enable TC
 		MtcP->CTRLA.reg |= TC_CTRLA_ENABLE;
 		while (MtcP->STATUS.bit.SYNCBUSY == 1) ;
-
-		MtcP->CTRLBSET.reg |= TC_CTRLBSET_CMD_RETRIGGER; //  Start
+		
+		timerInitialized = true;
 	}
 
 }

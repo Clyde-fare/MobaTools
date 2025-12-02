@@ -68,7 +68,7 @@ bool IRAM_ATTR setStepperPins( stepperData_t *stepperDataP, uint8_t stepPattern 
 
 #pragma GCC optimize "O3"   // optimize ISR for speed
 void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
-    SET_TP1;
+    SET_TP2;
     static const int DRAM_ATTR stepPattern[8] = {0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001,0b0001 };
     stepperData_t *stepperDataP;         // actual stepper data in IRQ
 	stepperSyncData_t *locSyncDataP;	 // Data for synchronous move ( =NULL if no sync move active )
@@ -500,7 +500,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
         startSpiWriteAS( spiStepperData );
         //CLR_TP4;
     }
-    CLR_TP1;
+    CLR_TP2;
 } // ==================== End of stepper ISR ======================================
 #pragma GCC optimize "Os"
 

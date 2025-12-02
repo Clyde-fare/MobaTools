@@ -140,12 +140,20 @@
         #define SET_TP4 
         #define CLR_TP4 
          
-    #elif defined ESP32
-        #define TP1 15
-        #define TP2 21
-        #define TP3 14
-        #define TP4 13
-        #define MODE_TP1 pinMode( TP1,OUTPUT )  // GPIO 13
+    #elif defined ESP32 || defined __SAMD__ // using standard Arduino digitalWrite
+		#ifdef ESP32
+			#define TP1 15
+			#define TP2 21
+			#define TP3 14
+			#define TP4 13
+		#elif defined __SAMD__
+			#warning "debug ports for Samd active"
+			#define TP1 A0
+			#define TP2 A1
+			#define TP3 A2
+			#define TP4 A3
+		#endif
+        #define MODE_TP1 pinMode( TP1,OUTPUT ) 
         #define SET_TP1  digitalWrite( TP1, HIGH )
         #define CLR_TP1  digitalWrite( TP1, LOW )
         #define MODE_TP2 pinMode(TP2,OUTPUT )  
@@ -157,7 +165,7 @@
         #define MODE_TP4  pinMode(TP4,OUTPUT )  
         #define SET_TP4   digitalWrite( TP4, HIGH )
         #define CLR_TP4  digitalWrite( TP4, LOW ) 
-    
+   
 	#elif defined ARDUINO_ARCH_RENESAS_UNO 
 	    //#warning "Debug ra4M1 aktiv" 
         #define TP1 BSP_IO_PORT_00_PIN_14 // (14) A0
@@ -231,7 +239,7 @@
 
     
 #else
-	//#warning "no testpins activated"
+	#warning "no testpins activated"
     #define MODE_TP1 
     #define SET_TP1 
     #define CLR_TP1 

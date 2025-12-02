@@ -20,6 +20,7 @@ ISR ( TIMERx_COMPB_vect) {
     // 26-09-15 An Interrupt is only created at timeslices, where data is to output
     SET_TP1;
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
+	//CLR_TP1;
     if ( stepperISR ) stepperISR(cyclesLastIRQ);
     //============  End of steppermotor ======================================
    if ( softledISR ) softledISR(cyclesLastIRQ);
@@ -27,6 +28,7 @@ ISR ( TIMERx_COMPB_vect) {
     // set compareregister to next interrupt time;
     // compute next IRQ-Time in us, not in tics, so we don't need long
     noInterrupts(); // when manipulating 16bit Timerregisters IRQ must be disabled
+	SET_TP1;
     if ( nextCycle == 1 )  {
         //CLR_TP1;
         // this is timecritical: Was the ISR running longer then CYCELTIME?
