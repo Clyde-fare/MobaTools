@@ -1,8 +1,8 @@
 // RA4M1 HW-spcific Functions
 #ifdef ARDUINO_ARCH_RENESAS_UNO 
-#include <MobaTools.h>
 #define debugTP
 //#define debugPrint
+#include <MobaTools.h>
 #include <utilities/MoToDbg.h>
 #ifdef debugIRQ
 #warning debugIRQ aktiv
@@ -91,8 +91,8 @@ void ISR_Ovf() {
 	static bool state = false;
 	// Acknoledge irq-flag
 	icuRegP->IELSR_b[timer_cfg.cycle_end_irq].IR = 0;
-	if ( state ) SET_TP4;		// trigger for oscilloscope testing
-	else CLR_TP4;
+	if ( state ) SET_TP1;		// trigger for oscilloscope testing
+	else CLR_TP1;
 	state = !state;
 	//digitalWrite(1, !digitalRead(1) );
 	
@@ -101,8 +101,10 @@ void ISR_Ovf() {
 ////////////////////////////////////////////////////////////////////////////////////////////
 void ISR_ServoRA4() {
 	// Acknowledge interrupt
+	SET_TP2;
 	icuRegP->IELSR_b[IRQnServo].IR = 0;
 	ISR_Servo();
+	CLR_TP2;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
 
