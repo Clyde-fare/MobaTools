@@ -31,12 +31,13 @@ IRQn_Type IRQnServo = FSP_INVALID_VECTOR ;      // NVIC-IRQ number for servo IRQ
 
 uint8_t noStepISR_Cnt = 0;   // Counter for nested StepISr-disable
 
-void stepperISR(int32_t cyclesLastIRQ)  __attribute__ ((weak));
-void softledISR(uint32_t cyclesLastIRQ)  __attribute__ ((weak));
+void stepperISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
+void softledISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 
 void ISR_Stepper() {
+	SET_TP1;
     // GPT Timer CCMPA, used for stepper motor and softleds, starts every nextCycle us
 	// Quit irq-flag
 	icuRegP->IELSR_b[IRQnStepper].IR = 0;
@@ -51,29 +52,26 @@ void ISR_Stepper() {
  
 
  // nextCycle ist set in stepperISR and softledISR
-    SET_TP1;
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
     if ( stepperISR ) stepperISR(cyclesLastIRQ);
     //============  End of steppermotor ======================================
     if ( softledISR ) softledISR(cyclesLastIRQ);
     // ======================= end of softleds =====================================
+	SET_TP1;
     // set compareregister to next interrupt time;
-	// next ISR must be at least MIN_STEP_CYCLE/4 beyond actual counter value ( time between to ISR's )
-	uint32_t minOCR = gptRegP->GTCNT;
-	uint32_t nextOCR = gptRegP->GTCCR[0];  // CCRA = Step cmp
-	if ( minOCR < nextOCR ) minOCR += TIMER_OVL_TICS; // timer had overflow already
-    minOCR = minOCR + ( (MIN_STEP_CYCLE/4) * TICS_PER_MICROSECOND ); // minimumvalue for next OCR
-	nextOCR = nextOCR + ( nextCycle * TICS_PER_MICROSECOND );
-	if ( nextOCR < minOCR ) {
-		// time till next ISR ist too short, set to mintime and adjust nextCycle
-        SET_TP2;
-		nextOCR = minOCR;
-		nextCycle = ( nextOCR - gptRegP->GTCCR[0]  ) / TICS_PER_MICROSECOND;
-        CLR_TP2;
+	uint16_t add2Ocr = nextCycle * TICS_PER_MICROSECOND; // tics to add to current compare reg
+	// Look where we currently are, and if we can hold the minimum time to the next IRQ
+	uint16_t minDiff = (gptRegP->GTCNT+MIN_TIC_DIFF) - gptRegP->GTCCR[0];
+	if (  minDiff >= add2Ocr ) {
+		// counter is already too far
+        CLR_TP1;
+		add2Ocr = minDiff;
+		nextCycle = add2Ocr / TICS_PER_MICROSECOND;
+        SET_TP1;
 	}
-    if ( nextOCR > (uint16_t)TIMER_OVL_TICS ) nextOCR -= TIMER_OVL_TICS;
-    gptRegP->GTCCR[0] = nextOCR  ;
+    gptRegP->GTCCR[0] =  gptRegP->GTCCR[0] + add2Ocr ;
     cyclesLastIRQ = nextCycle;
+	
 #ifdef debugIRQ
 	if( dbgIx < dbgIxMax ) {
 		dbgTimer[dbgIx].postTimerCnt = gptRegP->GTCNT;
@@ -91,8 +89,8 @@ void ISR_Ovf() {
 	static bool state = false;
 	// Acknoledge irq-flag
 	icuRegP->IELSR_b[timer_cfg.cycle_end_irq].IR = 0;
-	if ( state ) SET_TP1;		// trigger for oscilloscope testing
-	else CLR_TP1;
+	if ( state ) SET_TP2;		// trigger for oscilloscope testing
+	else CLR_TP2;
 	state = !state;
 	//digitalWrite(1, !digitalRead(1) );
 	

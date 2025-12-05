@@ -15,7 +15,7 @@ void ISR_Stepper();
 
 void TCx_Handler() {
 	// This is the IRQ-Handler for the timer used by MobaTools ( for Stepper, Softled and Servo  )
-	SET_TP1; // to measure time in ISR
+	SET_TP2; // to measure time in ISR
     if (MtcP->INTFLAG.reg & STEP_INT_MSK ) 
     {	// was  compare interrupt for steppers and Softleds
 		ISR_Stepper();
@@ -23,7 +23,7 @@ void TCx_Handler() {
     }
     if (MtcP->INTFLAG.reg & SERVO_INT_MSK) // was  compare interrupt for servos
     {
-		//ISR_Servo();
+		ISR_Servo();
         MtcP->INTFLAG.reg = SERVO_INT_MSK; // Acknowledge servo interrupt
     }
 	/*// only debugging:
@@ -35,33 +35,39 @@ void TCx_Handler() {
 		CLR_TP2;
     }
 	*/
-	CLR_TP1; 
+	CLR_TP2; 
 	
 }
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 void ISR_Stepper() {
     // TCn Channel 1, used for stepper motor and softleds, starts every nextCycle us
+    SET_TP1;
+    CLR_TP1;
+	
     // nextCycle ist set in stepperISR and softledISR
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
     if ( stepperISR ) stepperISR(cyclesLastIRQ);
     //============  End of steppermotor ======================================
+	SET_TP1;
+	CLR_TP1;
     if ( softledISR ) softledISR(cyclesLastIRQ);
     // ======================= end of softleds =====================================
+	SET_TP1;
     // set compareregister to next interrupt time;
 	// next ISR must be at least MIN_TIC_DIFF beyond actual counter value ( time between two ISR's )
 	uint16_t add2Ocr = nextCycle * TICS_PER_MICROSECOND; // tics to add to current compare reg
-	CLR_TP1;
 	uint16_t minDiff = (MtcP->COUNT.reg+MIN_TIC_DIFF) - MtcP->CC[0].reg;
 	if (  minDiff >= add2Ocr ) {
 		// counter is already too far
-        SET_TP2;
+        CLR_TP2;
 		add2Ocr = minDiff;
 		nextCycle = add2Ocr / TICS_PER_MICROSECOND;
-        CLR_TP2;
+        SET_TP2;
 	}
     MtcP->CC[0].reg =  MtcP->CC[0].reg + add2Ocr ;
     cyclesLastIRQ = nextCycle;
+	CLR_TP1;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
 void seizeTimerAS() {
@@ -92,32 +98,35 @@ void seizeTimerAS() {
 		while (MtcP->STATUS.bit.SYNCBUSY == 1) ;
 		
 		timerInitialized = true;
+		
+		MODE_TP1;
+		MODE_TP2;
+		MODE_TP3;
+		MODE_TP4;
+
 	}
 
 }
 
 
 
-extern "C" {
 // TODO ------------------------  ISR for SPI-Stepper ------------------------
 //static int rxData;
-#ifdef USE_SPI2
-/*
-void __irq_spi2(void) {// STM32  spi2 irq vector
-    rxData = spi_rx_reg(SPI2);            // Get dummy data (Clear RXNE-Flag)
-    digitalWrite(BOARD_SPI2_NSS_PIN,HIGH);
-}
-#else
-void __irq_spi1(void) {// STM32  spi1 irq vector
+void MTSPI_Handler() { 
     //SET_TP4;
-    rxData = spi_rx_reg(SPI1);            // Get dummy data (Clear RXNE-Flag)
-    digitalWrite(BOARD_SPI1_NSS_PIN,HIGH);
+    // output step-pattern on SPI, set SS when ready
+    /*if ( spiByteCount++ == 0 ) {
+        // end of shifting out high Byte, shift out low Byte
+        SPDR = spiStepperData[0];
+    } else {
+        // end of data shifting
+        //digitalWrite( SS, HIGH );
+        spiByteCount = 0;
+    }*/
     //CLR_TP4;
+    
 }
-*/
-#endif
 
-} // end of extern "C"
 
 
 

@@ -1,7 +1,7 @@
 #ifndef MOTOSAMD_H
 #define MOTOSAMD_H
 // SAMD specific defines for Cpp files
-
+#include <SPI.h>
 //#warning SAMD specific cpp includes
 extern uint8_t noStepISR_Cnt;   // Counter for nested StepISr-disable
 extern TcCount16 *MtcP;	// Pointer to timerstruct of used timer
@@ -78,11 +78,17 @@ static inline __attribute__((__always_inline__)) void initSpiAS() {
     // initialize SPI hardware.
     // MSB first, default Clk Level is 0, shift on leading edge
 	//TODO - initialize Samd SPI
+	SPI.begin();	// Default SPI interface
+	pinMode(PIN_SPI_SS,OUTPUT);
     spiInitialized = true;  
 }
 
 static inline __attribute__((__always_inline__)) void startSpiWriteAS( uint8_t spiData[] ) {
 	// TODO write step pattern over SPI
+	// Actual without IRQ
+	digitalWrite(PIN_SPI_SS,LOW);
+	SPI.transfer16( spiData[1]<<8 | spiData[0] );
+	digitalWrite(PIN_SPI_SS,HIGH);
 }    
     
 
