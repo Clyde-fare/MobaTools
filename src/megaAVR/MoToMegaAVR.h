@@ -52,10 +52,10 @@ static inline __attribute__((__always_inline__)) void enableServoIsrAS() {
     TCA0_SINGLE_INTCTRL |= TCA_SINGLE_CMP0_bm ; 
 }
 
-#define setServoCmpAS(x)		// ignore this call
+#define setServoCmpAS(x)	TCA0_SINGLE_CMP0 = x	// Set compare reg
 
 #endif // COMPILING_MOTOSERVO_CPP
-	TIMSKx = TIMSKx | 
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined COMPILING_MOTOSOFTLED_CPP
 

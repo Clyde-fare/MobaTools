@@ -22,9 +22,10 @@
   MobaTools V3.0.0
    
   History:
-  V3.0 x-2025
+  V3.0 x-2026
   - Old compatibility method names no longer available
   - Synced stepper movement with acceleration
+  - support of Samd21 MCU
   V2.7.1 x-2025
 	- RP204 processers: priority of timer IRQ can be set in MobaTools.h
   V2.7.0 3-2025
@@ -179,16 +180,17 @@
 	#define MIN_STEP_CYCLE  2       // Minimum number of cycles per step. 
 	#ifdef ARDUINO_AVR_NANO_EVERY
 		// SPI SS for Nano Every 
-		#define MoToSS SS	// Standard for Every is pin 8;
+		//#define MoToSS SS	// Standard for Every is pin 8;
+		#define MoToSS 10	// Set it like other AVR-boards ( most Nano boards don't have a default SS )
 	#elif defined ARDUINO_AVR_UNO_WIFI_REV2
 		// SPI-SS for UNO Rev2 WiFi 
-		#define MoToSS 8		// Rev2 has no standard SS ( standard is pin22, which is not connected to anything )
+		#define MoToSS 10		// Rev2 has no standard SS ( standard is pin22, which is not connected to anything )
   #elif defined __AVR_TINY_2__
     // SPI SS for ATtiny 2 series
     #define MoToSS PIN_PA4	// Standard for ATtiny 2 series is pin PA4(0);
   #else
 		// default for other ( are there any?) boards or megaCoreX core
-		#define MoToSS 8		// standard for other boards
+		#define MoToSS 10		// standard for other boards
 	#endif
 #elif defined ARDUINO_ARCH_RENESAS_UNO ////////////////////////////////////////////////////////
 	#define MIN_STEP_CYCLE  80       // Minimum number of µsec  per Step
@@ -196,7 +198,7 @@
 									// Lower priority ( higher value) will lead to problems on R4 WiFi 
 									// with WiFi active
 #elif defined ARDUINO_ARCH_RP2040 && !defined ARDUINO_ARCH_MBED  ///////////////////////////////////////////////////////////
-	#define MIN_STEP_CYCLE 20       // increment for nextCycle if too short
+	#define MIN_STEP_CYCLE 20       // Minimum number of µsec  per Step
 	#define IRQ_PRIO 64				// NVIC priority of timer IRQ ( stepper&softleds) - 128 is default for SDK
 									// lower value = higher priority
 	//#define USE_SPI1				// if SPI 1 for SPI-Stepper should be used ( not possible on nano RP2040 )

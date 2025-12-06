@@ -74,7 +74,7 @@ void MoToStepper::initialize ( long steps360, uint8_t mode ) {
 		_stepperData.aCycSteps = 0; // means no step
 		_stepperData.tCycSteps = _stepperData.aCycSteps; 
 	#else
-		_stepperData.aCycSteps = TIMERPERIODE; //MIN_STEPTIME/CYCLETIME; 
+		_stepperData.aCycSteps = 0; //TIMERPERIODE; //MIN_STEPTIME/CYCLETIME; TODO V3.0 warum TIMERPERIODE in V2.7?
 		_stepperData.tCycSteps = _stepperData.aCycSteps; 
 	#endif
 	#ifndef IS_32BIT
@@ -384,9 +384,9 @@ int32_t MoToStepper::getSpeedSteps( ) { //######################################
 	// return actual speed in steps/ 10sec 
     if ( _stepperData.output == NO_OUTPUT ) return 0; // not attached
 	int8_t direction;
-	rampStat rState;	// rampstate indicates whether stepper is moving
-	uint8_t sZeroFlg;	// indicates if stepper doesn't move because speed was set to 0
     #ifdef IS_32BIT
+		rampStat rState;	// rampstate indicates whether stepper is moving
+		uint8_t sZeroFlg;	// indicates if stepper doesn't move because speed was set to 0
 	    // there is no remainder on 32bit systems annd aCycSteps is in µs
         int32_t actSpeedSteps = 0;
         noInterrupts();

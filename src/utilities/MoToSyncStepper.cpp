@@ -11,7 +11,7 @@
 void printStepperChain();
 
 MoToSyncStepper::MoToSyncStepper()
-    : _numSteppers(0), _maxSpeed(5000), _rampLen(0), _stepperChainP(NULL) {
+    : _stepperChainP(NULL), _numSteppers(0), _maxSpeed(5000), _rampLen(0)  {
 }
 
 boolean MoToSyncStepper::addStepper(MoToStepper& stepper) {

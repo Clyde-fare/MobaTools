@@ -239,7 +239,7 @@
 
     
 #else
-	#warning "no testpins activated"
+	//#warning "no testpins activated"
     #define MODE_TP1 
     #define SET_TP1 
     #define CLR_TP1 

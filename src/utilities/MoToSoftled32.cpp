@@ -17,8 +17,8 @@
 // variables for softLeds
 // On 32bit controllers all cycle times are measured in µs ( 1 cycle = 1µs )
 static ledData_t* ledRootP = NULL; //start of _ledData-chain
-static int32_t ledNextCyc = 1;     // next Cycle that is relevant for leds
-static int32_t ledCycleCnt = 0;    // count IRQ cycles within PWM cycle
+static nextCycle_t ledNextCyc = 1;     // next Cycle that is relevant for leds
+static nextCycle_t ledCycleCnt = 0;    // count IRQ cycles within PWM cycle
 
 static ledData_t*  ledDataP;              // pointer to active Led in ISR
 

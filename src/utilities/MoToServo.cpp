@@ -526,7 +526,7 @@ void MoToServo::setSpeedTime(uint16_t minMaxTime ) {
 	
 	
 	
-void MoToServo::setSpeed( int speed, bool compatibility ) {
+void MoToServo::setSpeed( uint16_t speed, bool compatibility ) {
     // set global compatibility-Flag
     #ifndef IS_ESP
     speedV08 = compatibility;   // not on ESP8266/ESP32
@@ -535,14 +535,15 @@ void MoToServo::setSpeed( int speed, bool compatibility ) {
 }
 #pragma GCC diagnostic pop
 
-void MoToServo::setSpeed( int speed ) {
+void MoToServo::setSpeed( uint16_t speed ) {
     // Set increment value for movement to new angle
     // 'speed' is 0,125µs increment per 20ms
 	uint16_t maxSpeed = (_maxPw -_minPw  ) * INC_PER_MICROSECOND ; // to change from min to max in one step
     if ( _servoData.pwmNbr != NOT_ATTACHED ) { // only if servo is attached
         //if ( speedV08 ) speed *= COMPAT_FACT; // no compatibility mode from V3 on
-        speed = constrain(  speed, 0, maxSpeed );  // 16000 means immediate movement, greater values make no sense
+        //speed = constrain(  speed, 0, maxSpeed );  // 16000 means immediate movement, greater values make no sense
                                         // Greater Values will also lead to an overflow on ESP32
+		if (speed > maxSpeed) speed = maxSpeed;
         noInterrupts();
         if ( speed == 0 )
             _servoData.inc = AS_Speed2Inc(maxSpeed);  // means immediate movement

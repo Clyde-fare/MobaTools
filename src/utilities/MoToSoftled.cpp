@@ -19,7 +19,7 @@
 
 // variables for softLeds
 static ledData_t* ledRootP = NULL; //start of _ledData-chain
-static uint8_t ledNextCyc = TIMERPERIODE  / CYCLETIME;     // next Cycle that is relevant for leds
+static uint8_t ledNextCyc = LED_CYCLE_MAX;     // next Cycle that is relevant for Leds. 
 static uint8_t ledCycleCnt = 0;    // count IRQ cycles within PWM cycle
 
 static ledData_t*  ledDataP;              // pointer to active Led in ISR
