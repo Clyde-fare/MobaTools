@@ -3,7 +3,7 @@
   Author: fpm, fpm@mnet-mail.de
   Copyright (c) 2020 All right reserved.
 
-  Functions for the stepper part of MobaTools
+  Functions for the softled part of MobaTools ( bulb simulation )
 */
 
 #if defined ARDUINO_ARCH_AVR || defined ARDUINO_ARCH_MEGAAVR //this is only for 8Bit AVR controllers
@@ -19,11 +19,11 @@
 
 // variables for softLeds
 static ledData_t* ledRootP = NULL; //start of _ledData-chain
-static uint8_t ledNextCyc = LED_CYCLE_MAX;     // next Cycle that is relevant for Leds. 
-static uint8_t ledCycleCnt = 0;    // count IRQ cycles within PWM cycle
+static nextCycle_t ledNextCyc = LED_CYCLE_MAX;     // next Cycle that is relevant for Leds. 
+static nextCycle_t ledCycleCnt = 0;    // count IRQ cycles within PWM cycle
 
 static ledData_t*  ledDataP;              // pointer to active Led in ISR
-void softledISR(uintx8_t cyclesLastIRQ) { // uint8 for AVR, uint32 for 32-Bit processors
+void softledISR(nextCycle_t cyclesLastIRQ) { // uint8 for AVR, uint32 for 32-Bit processors
     // ---------------------- softleds -----------------------------------------------
     SET_TP2;
     ledCycleCnt += cyclesLastIRQ;
