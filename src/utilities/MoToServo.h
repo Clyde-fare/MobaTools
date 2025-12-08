@@ -93,11 +93,11 @@ class MoToServo
     MoToServo (MoToServo && )                   =delete;
     
     MoToServo();
-    uint8_t attach(int pin); // attach to a pin, sets pinMode, returns 0 on failure, won't
+    uint8_t attach(byte pin); // attach to a pin, sets pinMode, returns 0 on failure, won't
                              // position the servo until a subsequent write() happens
-    uint8_t attach( int pin, bool autoOff );        // automatic switch off pulses with constant length
-    uint8_t attach(int pin, uint16_t pos0, uint16_t pos180 ); // also sets position values (in us) for angele 0 and 180
-    uint8_t attach(int pin, uint16_t pos0, uint16_t pos180, bool autoOff );
+    uint8_t attach( byte pin, bool autoOff );        // automatic switch off pulses with constant length
+    uint8_t attach(byte pin, uint16_t pos0, uint16_t pos180 ); // also sets position values (in us) for angele 0 and 180
+    uint8_t attach(byte pin, uint16_t pos0, uint16_t pos180, bool autoOff );
     void detach();
     void write(uint16_t);         // specify the angle in degrees, 0 to 180. Values obove 180 are interpreted
                              // as microseconds, limited to MaximumPulse and MinimumPulse

@@ -358,17 +358,17 @@ void MoToServo::setMaximumPulse(uint16_t t)
 }
 
 
-uint8_t MoToServo::attach(int pinArg) {
+uint8_t MoToServo::attach(byte pinArg) {
     return attach( pinArg, MINPULSEWIDTH, MAXPULSEWIDTH, false );
 }
-uint8_t MoToServo::attach(int pinArg, bool autoOff ) {
+uint8_t MoToServo::attach(byte pinArg, bool autoOff ) {
     return attach( pinArg, MINPULSEWIDTH, MAXPULSEWIDTH, autoOff );
 }
-uint8_t MoToServo::attach(int pinArg, uint16_t pmin, uint16_t pmax ) {
+uint8_t MoToServo::attach(byte pinArg, uint16_t pmin, uint16_t pmax ) {
     return attach( pinArg, pmin, pmax, false );
 }
 
-uint8_t MoToServo::attach( int pinArg, uint16_t pmin, uint16_t pmax, bool autoOff ) {
+uint8_t MoToServo::attach( byte pinArg, uint16_t pmin, uint16_t pmax, bool autoOff ) {
     // return false if already attached or too many servos
     DB_PRINT("Servoattach: pwmNbr=%d, servoIx=%d, Pin=%d", _servoData.pwmNbr, _servoData.servoIx, pinArg );
     if ( _servoData.pwmNbr >= 0  ||  _servoData.servoIx >= MAX_SERVOS ) return 0;
