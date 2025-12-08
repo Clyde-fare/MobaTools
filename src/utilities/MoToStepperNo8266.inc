@@ -41,8 +41,9 @@ bool IRAM_ATTR setStepperPins( stepperData_t *stepperDataP, uint8_t stepPattern 
 	}
 	switch ( stepperDataP->output ) {
 	#endif
-	  case SINGLE_PINS : // Outpins are individually defined
-		for ( uint8_t bitNr = 0; bitNr < 4; bitNr++ ) {
+	  case SINGLE_PINS2 : // Outpins are individually defined
+	  case SINGLE_PINS4 : // Outpins are individually defined
+		for ( uint8_t bitNr = 0; bitNr < stepperDataP->output; bitNr++ ) {
 			// setStepperPinsAS( bitNr, stepPattern & (1<<bitNr) );
 			if ( stepPattern & (1<<bitNr) ) {
 				#ifdef FAST_PORTWRT
@@ -85,9 +86,9 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 		
         #ifdef IS_32BIT
         bool resetPulse = false; // for 32Bit reset pulse und setting new pulse is never done in same IRQ
-        if ( stepperDataP->output == A4988_PINS && digitalRead(stepperDataP->pins[0]) ) {
+        if ( stepperDataP->output == STEPDIR_PINS && digitalRead(stepperDataP->pins[0]) ) {
         #else
-        if ( stepperDataP->output == A4988_PINS  ) {
+        if ( stepperDataP->output == STEPDIR_PINS  ) {
         #endif
             // reset step pulse - pulse is max one cycle length
             #ifdef FAST_PORTWRT
@@ -163,9 +164,10 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 }
                 switch ( stepperDataP->output ) {
                 #endif
-                  case SINGLE_PINS : // Outpins are individually defined
+                  case SINGLE_PINS2 : // Outpins are individually defined
+                  case SINGLE_PINS4 : // Outpins are individually defined
                     changedPins = stepPattern[ _patIx ] ^ stepperDataP->lastPattern;
-                    for ( bitNr = 0; bitNr < 4; bitNr++ ) {
+                    for ( bitNr = 0; bitNr < stepperDataP->output; bitNr++ ) {
                         if ( changedPins & (1<<bitNr ) ) {
                             // bit Changed, write to pin
                             if ( stepPattern[ _patIx ] & (1<<bitNr) ) {
@@ -185,7 +187,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     }
                     stepperDataP->lastPattern = stepPattern[ _patIx ];
                     break;
-                  case A4988_PINS : // output step-pulse and direction
+                  case STEPDIR_PINS : // output step-pulse and direction
                     // direction first
                     //SET_TP2;
                     if ( stepperDataP->patternIxInc > 0 ) {

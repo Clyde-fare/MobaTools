@@ -20,20 +20,16 @@
 // Output modes ( outarg in attach method )
 #define NO_OUTPUT   0
 
-#if defined PORTD && defined PORTB
-// V2.6: not allowed anymore ( wasn't described in Doku since V0.8
-//#define PIN8_11     1
-//#define PIN4_7      2
-#endif
-
+#define STEPDIR_PINS      1
 #ifndef ESP8266
-#define SPI_1           3
-#define SPI_2           4
-#define SPI_3           5
-#define SPI_4           6
-#define SINGLE_PINS     7
+#define SINGLE_PINS2     2		// don't change this number
+#define SINGLE_PINS4     4		// don't change this number
+
+#define SPI_1           5		// The numbers for SPI_1...SPI_4 must be in direct sequence
+#define SPI_2           6
+#define SPI_3           7
+#define SPI_4           8
 #endif
-#define A4988_PINS      8
 
 
 // #define CYCLETICS       (CYCLETIME*TICS_PER_MICROSECOND)
@@ -129,7 +125,7 @@ typedef struct stepperData_t {
   volatile long stepsFromZero;  // distance from last reference point ( always as steps in HALFSTEP mode )
                                 // in FULLSTEP mode this is twice the real step number
   // bit-coded byte:
-  uint8_t output  :5 ;             // PORTB(pin8-11), PORTD (pin4-7), SPI0,SPI1,SPI2,SPI3, SINGLE_PINS, A4988_PINS
+  uint8_t output  :5 ;          //SPI_1,SPI_2,SPI_3, SPI_4, SINGLE_PINS2, SINGLE_PINS4, STEPDIR_PINS
   uint8_t delayActiv :1;        // enable delaytime is running
   uint8_t enable:1;             // true: enablePin=HIGH is active, false: enablePin=LOW is active
   uint8_t enableOn:1;			// true: Enable is active, can be switched off/on by user if it is
@@ -155,8 +151,6 @@ typedef struct stepperData_t {
 
 typedef union { // used output channels as bit and uint8_t
       struct {
-        uint8_t pin8_11 :1;
-        uint8_t pin4_7  :1;
         uint8_t spi_1    :1;
         uint8_t spi_2    :1;
         uint8_t spi_3    :1;

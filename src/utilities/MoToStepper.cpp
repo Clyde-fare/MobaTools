@@ -122,14 +122,14 @@ bool MoToStepper::_chkRunning() { // ###########################################
 
 // public functions -------------------
 uint8_t MoToStepper::attach( byte stepP, byte dirP ) { //######################################
-    // step motor driver STEPDIR is used
+    // step motor driver STEPDIR or FULLSTEP with only 2 pins is used
     byte pins[2];
-    if ( stepMode != STEPDIR ) return 0;    // false mode
-    DB_PRINT( "Attach4988, S=%d, D=%d", stepP, dirP );
-    
+    if ( stepMode != STEPDIR && stepMode != FULLSTEP ) return 0;    // false mode
+    DB_PRINT( "Attach with 2 pins, S=%d, D=%d", stepP, dirP );
     pins[0] = stepP;
     pins[1] = dirP;
-    return MoToStepper::attach( A4988_PINS, pins );
+    if ( stepMode == STEPDIR ) return MoToStepper::attach( STEPDIR_PINS, pins );
+	else return MoToStepper::attach( SINGLE_PINS2, pins );
 }
 #ifndef ESP8266
 uint8_t MoToStepper::attach( byte pin1, byte pin2, byte pin3, byte pin4 ) {
@@ -138,7 +138,7 @@ uint8_t MoToStepper::attach( byte pin1, byte pin2, byte pin3, byte pin4 ) {
     pins[1] = pin2;
     pins[2] = pin3;
     pins[3] = pin4;
-    return MoToStepper::attach( SINGLE_PINS, pins );
+    return MoToStepper::attach( SINGLE_PINS4, pins );
 }
 uint8_t MoToStepper::attach(byte outArg) {
     return MoToStepper::attach( outArg, (byte *)NULL );
@@ -150,11 +150,12 @@ uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
     MODE_TP2;
     MODE_TP3;
     MODE_TP4;
-    // outArg must be one of PIN8_11 ... SPI_4 or SINGLE_PINS, A4988_PINS
+    // outArg must be one of SINGLE_PINS2, SINGLE_PINS4 STEPDIR_PINS, SPI_1...SPI_4
 	// V2.6: PIN8_11/PIN4_7 not allowed anymore ( wasn't described in Doku since V0.8
+	DB_PRINT("Attach - Mode=%d, Pin0= %d, Pin1= %d, Pin2= %d, Pin3= %d",  outArg,  pins[0],  pins[1],  pins[2],  pins[3] );
     if ( stepMode == NOSTEP ) { DB_PRINT("Attach: invalid Object ( Ix = %d)", _stepperIx ); return 0; }// Invalid object
 	#ifdef ESP8266
-		if ( outArg != A4988_PINS ) return 0;
+		if ( outArg != STEPDIR_PINS ) return 0;
         if ( pins[0] >15 || gpioUsed(pins[0] ) ) return 0; // pins cannot be negative because of uint8_t
         if ( pins[1] >15 || gpioUsed(pins[1] ) ) return 0;
         setGpio(pins[0]);    // mark pin as used
@@ -168,17 +169,18 @@ uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
       case SPI_3:
       case SPI_4:
         // check if already in use 
-        if ( (MoToStepper::outputsUsed.outputs & (1<<(outArg-1)))  ) {
+        if ( (MoToStepper::outputsUsed.outputs & (1<<(outArg-SPI_1)))  ) {
             // incompatible!
             attachOK = false;
         } else {
             initSpiAS();
-            MoToStepper::outputsUsed.outputs |= (1<<(outArg-1));
+            MoToStepper::outputsUsed.outputs |= (1<<(outArg-SPI_1));
         }
         break;
-      case SINGLE_PINS:
+      case SINGLE_PINS2:
+      case SINGLE_PINS4:
         // 4 single output pins - as yet there is no check if they are allowed!
-        for ( byte i = 0; i<4; i++ ) {
+        for ( byte i = 0; i<outArg; i++ ) {
             #ifdef FAST_PORTWRT
             // compute portadress and bitnumber
             _stepperData.portPins[i].Adr = portOutputRegister(digitalPinToPort(pins[i]));
@@ -191,7 +193,7 @@ uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
         }
         break;
 	  #endif // no ESP8266
-      case A4988_PINS:
+      case STEPDIR_PINS:
         // 2 single output pins (step and direction) - as yet there is no check if they are allowed!
         for ( byte i = 0; i<2; i++ ) {
             #ifdef FAST_PORTWRT
@@ -232,10 +234,10 @@ void MoToStepper::detach() {   // no more moving, detach from output############
     switch ( _stepperData.output ) {
 		// V2.6: PIN8_11/PIN4_7 not allowed anymore ( wasn't described in Doku since V0.8
       #ifdef FAST_PORTWRT
-      case SINGLE_PINS:
-        nPins+=2;           // we have 2 more pins in Mode SINGLE_PINS compared to A4988Pins (  fallthrough to next case )
+      case SINGLE_PINS4:
+        nPins+=2;           // we have 2 more pins in Mode SINGLE_PINS4 compared to A4988Pins (  fallthrough to next case )
         [[fallthrough]];    // supress warning
-      case A4988_PINS:
+      case STEPDIR_PINS:
         for ( byte i=0; i<nPins; i++ ) {
             *(_stepperData.portPins[i].Adr-1) &= ~_stepperData.portPins[i].Mask;
             *(_stepperData.portPins[i].Adr) &= ~_stepperData.portPins[i].Mask;
@@ -243,13 +245,14 @@ void MoToStepper::detach() {   // no more moving, detach from output############
         break;
       #else
 	  #ifndef ESP8266
-      case SINGLE_PINS:
+      case SINGLE_PINS4:
         // 4 single output pins
            pinMode( _stepperData.pins[3], INPUT );
            pinMode( _stepperData.pins[2], INPUT );
         [[fallthrough]];    // supress warning
+      case SINGLE_PINS2: // only pins 0/1 
 	  #endif
-      case A4988_PINS: // only pins 0/1 
+      case STEPDIR_PINS: // only pins 0/1 
            pinMode( _stepperData.pins[1], INPUT );
            pinMode( _stepperData.pins[0], INPUT );
         break;
@@ -370,7 +373,7 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10 ) { //####################
     #else
     long rtmp = (long)speed10*_lastRampLen/_lastRampSpeed;
     #endif
-    DB_PRINT(">>>>>>>>>>>sSS:(%u) nRl=%ld", (unsigned int)speed10, rtmp );
+    //DB_PRINT(">>>>>>>>>>>sSS:(%u) nRl=%ld", (unsigned int)speed10, rtmp );
     return setSpeedSteps( speed10,  -rtmp-1 );
 }
 
@@ -426,7 +429,7 @@ int32_t MoToStepper::getSpeedSteps( ) { //######################################
 
             actSpeedSteps = 1000000L * 10 / ( (long)aCycSteps*CYCLETIME + (long)aCycRemain*CYCLETIME/(stepsInRamp + RAMPOFFSET ) );
         }
-        DB_PRINT( "Acyc=%5d, Arem=%5d, SiR=%d, ( Tcyc=%5d, Trem=%5d, Dir=%d ) ", aCycSteps, aCycRemain, stepsInRamp, tCycSteps, tCycRemain,direction );
+        //DB_PRINT( "Acyc=%5d, Arem=%5d, SiR=%d, ( Tcyc=%5d, Trem=%5d, Dir=%d ) ", aCycSteps, aCycRemain, stepsInRamp, tCycSteps, tCycRemain,direction );
     #endif
 	return (int32_t)actSpeedSteps * direction;
 }
@@ -453,7 +456,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
     //Serial.print( "doSteps: " ); Serial.println( stepValue );
     stepsToMove = stepValue;
     stepCnt = labs(stepValue); // abs() doesn't work correctly on Nano Every for type long !!??? -> labs() works!
-	DB_PRINT(">>>>>>>>>>doSteps(%ld,%ld)>>>>>>>>>>>>>>>", stepValue,stepCnt );
+	//DB_PRINT(">>>>>>>>>>doSteps(%ld,%ld)>>>>>>>>>>>>>>>", stepValue,stepCnt );
     
     if ( _stepperData.stepRampLen > 0 || _stepperData.rampState == rampStat::SPEEDDECEL ) {
         // stepping with ramp
@@ -554,7 +557,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
                 _stepperData.stepsInRamp    = 0;
                 _stepperData.stepCnt        = stepCnt;
                 _stepIRQ();
-                DB_PRINT("New Move: Steps:%ld, Enable=%d - State=%s(%d)", (long)stepValue, (int)digitalRead(_stepperData.enablePin) , rsC[(int)_stepperData.rampState],(int)_stepperData.rampState );
+                //DB_PRINT("New Move: Steps:%ld, Enable=%d - State=%s(%d)", (long)stepValue, (int)digitalRead(_stepperData.enablePin) , rsC[(int)_stepperData.rampState],(int)_stepperData.rampState );
             }
         }
     } else {
@@ -636,7 +639,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
         digitalWrite( _stepperData.pins[1], (_stepperData.patternIxInc < 0) );
         interrupts();
     }
-    DB_PRINT( "newStepValues:, sMove=%ld, Speed10=%d", stepsToMove,  _stepSpeed10  );
+    //DB_PRINT( "newStepValues:, sMove=%ld, Speed10=%d", stepsToMove,  _stepSpeed10  );
     #else
     //DB_PRINT( "StepValues:, sCnt=%ld, sCnt2=%ld, sMove=%ld, aCyc=%d", _stepperData.stepCnt, _stepperData.stepCnt2, stepsToMove, _stepperData.aCycSteps );
     //DB_PRINT( "RampValues:, Spd=%u, rmpLen=%u, tcyc=%u, trest=%u, acyc=%u", _stepSpeed10, _stepperData.stepRampLen,
@@ -671,7 +674,7 @@ void MoToStepper::setZero(long zeroPoint, long steps360) {
 //#################################################################################################################
 void MoToStepper::write(long angleArg ) {
     // set next position as angle, measured from last setZero() - point
-    DB_PRINT("write: %d", (int)angleArg);
+    //DB_PRINT("write: %d", (int)angleArg);
     MoToStepper::write( angleArg, 1 );
 }
 
@@ -682,7 +685,7 @@ void MoToStepper::write( long angleArg, byte fact ) {
     bool negative;
     long angle2steps;
     negative =  ( angleArg < 0 ) ;
-    DB_PRINT( "angleArg: %d",(int)angleArg ); //DB_PRINT( " getSFZ: ", getSFZ() );
+    //DB_PRINT( "angleArg: %d",(int)angleArg ); //DB_PRINT( " getSFZ: ", getSFZ() );
     //Serial.print( "Write: " ); Serial.println( angleArg );
     // full revolutions:
     angle2steps = abs(angleArg) / (360L * fact ) * (long)stepsRev;
@@ -759,7 +762,7 @@ uint8_t MoToStepper::moving() { //##############################################
 void MoToStepper::rotate(int8_t direction) { //##################################################################
 	// rotate endless ( not really, do maximum stepcount ;-)
     if ( _stepperData.output == NO_OUTPUT ) return; // not attached
-    DB_PRINT("rotate %d",direction);
+    //DB_PRINT("rotate %d",direction);
 	if (direction == 0 ) {
         if ( _stepperData.stepRampLen == 0 ) {
             // no ramp, identical to 'stop'
@@ -771,7 +774,7 @@ void MoToStepper::rotate(int8_t direction) { //#################################
               case rampStat::RAMPACCEL:
               case rampStat::SPEEDDECEL:
                 _stepperData.stepCnt = _stepperData.stepsInRamp;
-                DB_PRINT("rot:Accel");
+                //DB_PRINT("rot:Accel");
                 break;
               case rampStat::CRUISING:
                 _stepperData.stepCnt = _stepperData.stepRampLen;
@@ -782,7 +785,7 @@ void MoToStepper::rotate(int8_t direction) { //#################################
                 _stepperData.stepCnt = 1;
                 break;
               default:
-                DB_PRINT("rot0: already stopped");
+                //DB_PRINT("rot0: already stopped");
                 ; // already in Stop or decelerating - do nothing
             }
             stepsToMove = _stepperData.stepCnt;
@@ -806,7 +809,7 @@ void MoToStepper::stop() {
         // its moving, stopping with next pulse
         stepsToMove = 0;
         _stepperData.stepCnt = 1;
-        DB_PRINT("Stopping!");
+        //DB_PRINT("Stopping!");
     }
     _stepIRQ();
 }
