@@ -1,11 +1,13 @@
 // ESP32 HW-spcific Functions
-#ifdef ARDUINO_ARCH_ESP32
 #include <MobaTools.h>
-#define debugTP
+#ifdef CONFIG_IDF_TARGET_ESP32S3
+
+#pragma message "compilingMoToESP32S3"
+//#define debugTP
 //#define debugPrint
 #include <utilities/MoToDbg.h>
 
-//#warning "HW specfic - ESP32 ---"
+//#warning "HW specfic - ESP32S3 ---"
 
 bool spiInitialized = false;
 void IRAM_ATTR stepperISR(int32_t cyclesLastIRQ)  __attribute__ ((weak));

@@ -26,9 +26,9 @@
 	#include <stm32f4/drivers.h>
 #elif defined ARDUINO_ARCH_ESP8266
 	#include <esp8266/drivers.h>
-#elif defined CONFIG_IDF_TARGET_ESP32S3
+#elif  CONFIG_IDF_TARGET_ESP32S3	// ==1 if MCU is ESP32S3 (Arduino Nano)
 	#include <esp32S3/drivers.h>
-#elif defined ARDUINO_ARCH_ESP32
+#elif CONFIG_IDF_TARGET_ESP32		// ==1 if MCU is ESP32
 	#include <esp32/drivers.h>
 #elif defined ARDUINO_ARCH_RENESAS_UNO 
 	#include <ra4m1/drivers.h>

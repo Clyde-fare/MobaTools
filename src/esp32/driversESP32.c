@@ -1,7 +1,8 @@
 // ESP32 HW-spcific Functions
-#ifdef ARDUINO_ARCH_ESP32
-// Logging
 #include <Arduino.h>
+#if CONFIG_IDF_TARGET_ESP32
+#pragma message "compiling driversESP32 - no ESP32S3 Board"
+// Logging
 #include "drivers.h"
 
 // ------------------ SOFTLED & Servos ------------------------------------------------------

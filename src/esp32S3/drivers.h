@@ -1,17 +1,14 @@
 // ESP32 HW-specific parts for MobaTools
     //--------------------------------------------------------------------------------------------------------------
-#ifndef ESP32_DRIVER_H
-#define ESP32_DRIVER_H
+#ifndef ESP32S3_DRIVER_H
+#define ESP32S3_DRIVER_H
 
-#if CONFIG_IDF_TARGET_ESP32S2 /*|| CONFIG_IDF_TARGET_ESP32S3*/ || CONFIG_IDF_TARGET_ESP32C3
-	#error This ESP32 processor is not supported
-#endif
 #include "esp32-hal-timer.h"
 #include "esp32-hal-spi.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv  ESP32  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv  ESP32S3  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 #define IS_32BIT
 #define IS_ESP  32
 #define HAS_PWM_HW
@@ -116,6 +113,7 @@ int8_t freePwmNbr( uint8_t pwmNbr );
 #define SOFTLED_FREQ    100
 #define LEDC_BITS  18          // bitresolution for duty cycle of servos and softleds
 								// one timertic is 0.07629 µs for servos
+#define INC_PER_MICROSECOND 13 // ~ 1/0.07629 µs
 #define SERVO_CYCLE ( 1000000L / SERVO_FREQ ) // Servo cycle in uS
 #define SOFTLED_CYCLE ( 1000000L / SOFTLED_FREQ ) // softled cycle in uS
 #define DUTY100     ( 1<<(LEDC_BITS) )
@@ -139,6 +137,6 @@ extern portMUX_TYPE timerMux;
 #ifdef __cplusplus
 }
 #endif
-#define ARCHITECT_INCLUDE <esp32/MoToESP32.h>
-#endif /* ESP32_DRIVER_H */
+#define ARCHITECT_INCLUDE <esp32S3/MoToESP32S3.h>
+#endif /* ESP32S3_DRIVER_H */
 

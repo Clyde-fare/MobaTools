@@ -1,7 +1,9 @@
 // ESP32 HW-spcific Functions
-#ifdef ARDUINO_ARCH_ESP32
-#include <MobaTools.h>
-#define debugTP
+#include <MobaTools.h>  // Values for ...TARGET_ESP32xx are defined here
+#if CONFIG_IDF_TARGET_ESP32
+#pragma message "compiling MoToESP32"
+
+//#define debugTP
 //#define debugPrint
 #include <utilities/MoToDbg.h>
 
@@ -87,5 +89,8 @@ void enableSoftLedIsrAS() {
 
 }
 
-
+// only for test
+#else
+	#pragma message "ESP32 ( noS3) is not compüiled
+// end test
 #endif

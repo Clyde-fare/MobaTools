@@ -1,16 +1,17 @@
 // ESP32 HW-spcific Functions
-#ifdef ARDUINO_ARCH_ESP32
+#include <Arduino.h>  // Values for ...TARGET_ESP32xx are defined here
+#if CONFIG_IDF_TARGET_ESP32S3
+#pragma message ">>compiling driversESP32S3<<"
 // Logging
-#include <Arduino.h>
 #include "drivers.h"
 
 // ------------------ SOFTLED & Servos ------------------------------------------------------
 // different versions of ledc programmimng: ( if both are defined, a mixed version is selected - not yet implemented )
-#ifdef LEDC_USE_SDK
+//#ifdef LEDC_USE_SDK
     #define SDK_ACCESS  // Die SDK-Aufrufe sind NICHT Interruptfest - die SDK-Version darf daher nicht aktiviert werden
-#else
-    #define REGISTER_ACCESS
-#endif
+//#else
+    //#define REGISTER_ACCESS
+//#endif
 
 //===================================================================================
 #if defined SDK_ACCESS //&& !defined REGISTER_ACCESS  // sdk version
@@ -18,8 +19,8 @@
 // version with sdk calls
 #include <driver/ledc.h>
 
-//#warning "HW specfic drivers.c (using sdk) - ESP32  --"
-#error "SDK-version must not be used"
+#warning "HW specfic drivers.c (using sdk) - ESP32  --"
+//#error "SDK-version must not be used"
 
 // variant with using the sdk to configure ledc hardware
 #define groupUsed(pwmNr)    ((pwmNr)/8)

@@ -1,8 +1,8 @@
-#ifndef MOTOESP32_H
-#define MOTOESP32_H
+#ifndef MOTOESP32S3_H
+#define MOTOESP32S3_H
 // ESP32 specific defines for Cpp files
 
-//#warning ESP32 specific cpp includes
+#warning ESP32S3 (Nano-ESP32) specific cpp includes
 void seizeTimerAS();
 void ISR_Servo( void *arg );
 inline __attribute__((__always_inline__)) void _noStepIRQ() {
