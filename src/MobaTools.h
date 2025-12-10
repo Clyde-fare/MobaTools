@@ -212,6 +212,9 @@
 	#define MT_TIMER 5			// Timer used by MobaTools ( 3,4,5 selecting TC3, TC4 or TC5  is possible)
 								// TC5 is default if the number is invalid or not set
 								// Be aware that always two timer ( TCC2/TC3 and TC4/TC5 ) share a common clock source
+	#ifndef PIN_SPI_SS
+	#define PIN_SPI_SS 10		// Selct pin for SPI - if not defined in core files
+	#endif
 #else ///////////////////////////////////////////////////////////////////////////////////
     #error Processor not supported
 #endif //////////////////////////////////////////////////////////////////////////////////

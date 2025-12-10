@@ -8,7 +8,7 @@
 #define COMPILING_MOTOSTEPPER_CPP
 
 //#define debugTP
-//#define debugPrint
+#define debugPrint
 #include <MobaTools.h>
 #define TODO	// ignore 
 // Global Data for all instances and classes  --------------------------------
@@ -124,12 +124,16 @@ bool MoToStepper::_chkRunning() { // ###########################################
 uint8_t MoToStepper::attach( byte stepP, byte dirP ) { //######################################
     // step motor driver STEPDIR or FULLSTEP with only 2 pins is used
     byte pins[2];
-    if ( stepMode != STEPDIR && stepMode != FULLSTEP ) return 0;    // false mode
-    DB_PRINT( "Attach with 2 pins, S=%d, D=%d", stepP, dirP );
+    if ( stepMode != STEPDIR && stepMode != FULLSTEP ) return 0;    // wrong mode
+    DB_PRINT( "Attach with 2 pins, S=%d, D=%d\n\r", stepP, dirP );
     pins[0] = stepP;
     pins[1] = dirP;
-    if ( stepMode == STEPDIR ) return MoToStepper::attach( STEPDIR_PINS, pins );
-	else return MoToStepper::attach( SINGLE_PINS2, pins );
+	#ifndef ESP8266
+		// ESP8266 has no FULLSTEP mode
+		if ( stepMode == FULLSTEP ) return MoToStepper::attach( SINGLE_PINS2, pins );
+		else
+	#endif
+		return MoToStepper::attach(STEPDIR_PINS , pins );
 }
 #ifndef ESP8266
 uint8_t MoToStepper::attach( byte pin1, byte pin2, byte pin3, byte pin4 ) {
@@ -152,7 +156,7 @@ uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
     MODE_TP4;
     // outArg must be one of SINGLE_PINS2, SINGLE_PINS4 STEPDIR_PINS, SPI_1...SPI_4
 	// V2.6: PIN8_11/PIN4_7 not allowed anymore ( wasn't described in Doku since V0.8
-	DB_PRINT("Attach - Mode=%d, Pin0= %d, Pin1= %d, Pin2= %d, Pin3= %d",  outArg,  pins[0],  pins[1],  pins[2],  pins[3] );
+	DB_PRINT("Attach - Mode=%d, Pin0= %d, Pin1= %d, Pin2= %d, Pin3= %d\n\r",  outArg,  pins[0],  pins[1],  pins[2],  pins[3] );
     if ( stepMode == NOSTEP ) { DB_PRINT("Attach: invalid Object ( Ix = %d)", _stepperIx ); return 0; }// Invalid object
 	#ifdef ESP8266
 		if ( outArg != STEPDIR_PINS ) return 0;
@@ -216,6 +220,7 @@ uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
         _stepperData.output = outArg;
         _stepperData.rampState = rampStat::STOPPED;
         setSpeedSteps( DEF_SPEEDSTEPS, DEF_RAMP );
+		DB_PRINT("Timer einrichten\n\r");
         seizeTimerAS();
         enableStepperIsrAS();
     }
@@ -520,6 +525,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
                 _noStepIRQ();
 				if ( _stepperData.syncMode == syncStat::SLAVE ) {
 					// it is a slave, so no own speed settings
+					#ifndef ESP8266  // no sync move with ESP8266
 					_stepperData.aCycSteps      = UINT_MAX; // don't create own step
 					_stepperData.cycCnt			= 0;
 					_stepperData.rampState		= rampStat::CRUISING;
@@ -530,6 +536,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 						// no delay
 						_stepperData.rampState      = rampStat::CRUISING;
 					}
+					#endif
 				} else {
 					// no slave, it has its own speed/ramp settings
 					#ifdef ESP8266
@@ -579,6 +586,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
             // stepper does not move, start it because we have to do steps
 			if ( _stepperData.syncMode == syncStat::SLAVE ) {
 				// it is a slave, so no own speed settings
+				#ifndef ESP8266  // no sync move with ESP8266
 				_stepperData.aCycSteps      = UINT_MAX; // don't create own step
 				_stepperData.cycCnt			= 0;
 				if ( _stepperData.enableOn ) {
@@ -588,6 +596,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 					// no delay
 					_stepperData.rampState      = rampStat::CRUISING;
 				}
+				#endif
 			} else {
 				#ifdef ESP8266
 					_stepperData.rampState      = rampStat::CRUISING;   // we don't have a ramp

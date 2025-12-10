@@ -7,6 +7,7 @@
 //#define debugPrint
 #include <Arduino.h>
 #include <MobaTools.h>
+#ifndef ESP8266 // version not for ESP8266
 
 void printStepperChain();
 
@@ -267,3 +268,5 @@ void MoToSyncStepper::stop (bool emergency ) {
 	void MoToSyncStepper::printStepperChain() { // dummy
 	}	
 #endif
+
+#endif  // not for ESP8266
