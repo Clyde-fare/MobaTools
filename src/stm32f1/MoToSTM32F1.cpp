@@ -1,17 +1,17 @@
 // STM32F1 HW-spcific Functions
 #ifdef ARDUINO_ARCH_STM32F1
 #define bool int
-#include <MobaTools.h>
 #define debugTP
 //#define debugPrint
-#include <utilities/MoToDbg.h>
+#include <MobaTools.h>
+//#include <utilities/MoToDbg.h>
 
 //#warning "HW specfic - STM32F1 ---"
 
 uint8_t noStepISR_Cnt = 0;   // Counter for nested StepISr-disable
 
-void stepperISR(int32_t cyclesLastIRQ)  __attribute__ ((weak));
-void softledISR(uint32_t cyclesLastIRQ)  __attribute__ ((weak));
+void stepperISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
+void softledISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 void ISR_Stepper() {
@@ -25,7 +25,8 @@ void ISR_Stepper() {
     // ======================= end of softleds =====================================
     // set compareregister to next interrupt time;
 	// next ISR must be at least MIN_STEP_CYCLE/4 beyond actual counter value ( time between to ISR's )
-	int minOCR = timer_get_count(MT_TIMER);
+
+	/*int minOCR = timer_get_count(MT_TIMER);
 	int nextOCR = timer_get_compare(MT_TIMER, STEP_CHN);
 	if ( minOCR < nextOCR ) minOCR += TIMER_OVL_TICS; // timer had overflow already
     minOCR = minOCR + ( (MIN_STEP_CYCLE/4) * TICS_PER_MICROSECOND ); // minimumvalue for next OCR
@@ -37,8 +38,19 @@ void ISR_Stepper() {
 		nextCycle = ( nextOCR - timer_get_compare(MT_TIMER, STEP_CHN)  ) / TICS_PER_MICROSECOND;
         CLR_TP2;
 	}
-    if ( nextOCR > (uint16_t)TIMER_OVL_TICS ) nextOCR -= TIMER_OVL_TICS;
-    timer_set_compare( MT_TIMER, STEP_CHN, nextOCR ) ;
+    if ( nextOCR > (uint16_t)TIMER_OVL_TICS ) nextOCR -= TIMER_OVL_TICS;*/
+	uint16_t actCompare = timer_get_compare(MT_TIMER, STEP_CHN);
+	uint16_t add2Ocr = nextCycle * TICS_PER_MICROSECOND; // tics to add to current compare reg
+	uint16_t minDiff = (timer_get_count(MT_TIMER)+MIN_TIC_DIFF) - actCompare;
+	if (  minDiff >= add2Ocr ) {
+		// counter is already too far
+        //CLR_TP2;
+		add2Ocr = minDiff;
+		nextCycle = add2Ocr / TICS_PER_MICROSECOND;
+        //SET_TP2;
+	}
+	
+    timer_set_compare( MT_TIMER, STEP_CHN, actCompare+add2Ocr ) ;
     cyclesLastIRQ = nextCycle;
     CLR_TP1; // Oszimessung Dauer der ISR-Routine
 }
@@ -69,10 +81,10 @@ void seizeTimerAS() {
     }
 }
 
-
+/*
 void enableServoIsrAS() {
 }
-
+*/
 extern "C" {
 // ------------------------  ISR for SPI-Stepper ------------------------
 static int rxData;

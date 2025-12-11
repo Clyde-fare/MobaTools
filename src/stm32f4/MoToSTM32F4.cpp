@@ -8,8 +8,8 @@
 
 //#warning "HW specfic - STM32F4 ---"
 uint8_t noStepISR_Cnt = 0;   // Counter for nested StepISr-disable
-void stepperISR(int32_t cyclesLastIRQ)  __attribute__ ((weak));
-void softledISR(uint32_t cyclesLastIRQ)  __attribute__ ((weak));
+void stepperISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
+void softledISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 void ISR_Stepper() {

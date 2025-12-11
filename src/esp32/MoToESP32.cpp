@@ -10,7 +10,7 @@
 //#warning "HW specfic - ESP32 ---"
 
 bool spiInitialized = false;
-void IRAM_ATTR stepperISR(int32_t cyclesLastIRQ)  __attribute__ ((weak));
+void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 

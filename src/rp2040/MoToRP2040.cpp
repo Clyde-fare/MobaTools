@@ -19,7 +19,7 @@ uint8_t spiInitialized = false;
 
 // bool spiInitialized = false;
 void stepperISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
-void softledISR(uint32_t cyclesLastIRQ)  __attribute__ ((weak));
+void softledISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 static absolute_time_t lastAlarm, aktAlarm;

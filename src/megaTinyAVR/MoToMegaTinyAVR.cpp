@@ -18,8 +18,8 @@ uint8_t noStepISR_Cnt;   // Counter for nested StepISr-disable
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 // ---------- OCRxB Compare Interrupt used for stepper motor and Softleds ----------------
-void stepperISR(uint8_t cyclesLastIRQ) __attribute__ ((weak));
-void softledISR(uint8_t cyclesLastIRQ) __attribute__ ((weak));
+void stepperISR(nextCycle_t cyclesLastIRQ) __attribute__ ((weak));
+void softledISR(nextCycle_t cyclesLastIRQ) __attribute__ ((weak));
 
 // reenabling interrupts within an ISR
 __attribute(( naked, noinline )) void isrIrqOn () { asm("reti"); }

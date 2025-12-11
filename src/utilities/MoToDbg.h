@@ -112,8 +112,8 @@
         //Test-HW füer Stepper:
         #define TP1 PB1
         #define TP2 PB0
-        #define TP3 PB13 
-        #define TP4 PB15
+        #define TP3 PA3 
+        #define TP4 PA2
         #define MODE_TP1 pinMode( TP1,OUTPUT )   // TP1= PA1
         #define SET_TP1  digitalWrite( TP1, HIGH )
         #define CLR_TP1  digitalWrite( TP1, LOW )

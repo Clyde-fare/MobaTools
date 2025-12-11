@@ -226,7 +226,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 //if ( --stepperDataP->stepCnt == 0 ) {
 				stepperDataP->stepCnt = stepperDataP->stepCnt	-1;
                 if ( stepperDataP->stepCnt == 0 ) {
-					CLR_TP1;
+					//CLR_TP1;
                     // this was the last step.
                     if (stepperDataP->stepCnt2 > 0 ) { // check if we have to start a movement backwards
                         // yes, change Direction and go stpCnt2 Steps
@@ -238,11 +238,11 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                         stepperDataP->stepsInRamp = 0;      // we cannot be in ramp when stopped
                         if (stepperDataP->enableOn) {
                             // enable is active, wait for disabling
-							SET_TP1;
+							//SET_TP1;
                             stepperDataP->aCycSteps = stepperDataP->cycDelay;
 							nextCycle = MIN_STEP_CYCLE/2; // step pulse will be resettet in half of min steptime
                             stepperDataP->rampState = rampStat::STOPPING;
-							CLR_TP1;
+							//CLR_TP1;
                         } else {    
 							stepperDataP->aCycSteps = ISR_IDLETIME;    // no more Interrupts for this stepper needed
 							stepperDataP->rampState = rampStat::STOPPED;
@@ -257,7 +257,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					}
 					stepperDataP->syncDataP = NULL; // acces to syncdata is still possible later in this IRQ
 													// via locSyncDataP
-					SET_TP1;
+					//SET_TP1;
                 }
                 // --------------- compute nexte steplength ------------------------------------
 				// --------------- This is not done on slave steppers in sync moves ------------
@@ -398,7 +398,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					// loop through all steppers of the synced move and check if a step is due
 					stepperSyncData_t *slavePtr = locSyncDataP->nextSyncData;
 					uint32_t slaveStep;
-					SET_TP2; 	//digitalWrite(A1, HIGH);
+					//SET_TP2; 	//digitalWrite(A1, HIGH);
 					// loop through all slaves to calculate their next step
 					while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
 						slaveStep = 0;
@@ -427,7 +427,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 								slavePtr->stepperDataP->cycCnt = 0;
 								//Reset ratio counter for slave
 								slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
-								SET_TP2;
+								//SET_TP2;
 							}
 							CLR_TP3;
 						}
@@ -606,7 +606,7 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
         uint32_t        __newStepCnt;
         uint32_t        __newStepCnt2;
         uint8_t loopCnt = 5;
-        do { CLR_TP4;
+        do { CLR_TP3;
             // read actual ISR values
             newRampState = _stepperData.rampState;
             __stepCnt       =  _stepperData.stepCnt; 
@@ -658,7 +658,7 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
                 newRampState = rampStat::RAMPDECEL;
             }
             if (loopCnt ) _noStepIRQ(); //SET_TP2;
-            SET_TP4;
+            SET_TP3;
             //Serial.print(" ) ");Serial.print(_stepperData.rampState);
         } while ( __stepCnt != _stepperData.stepCnt && loopCnt ); // if there was a step during computing, do it again
         _stepperData.rampState = newRampState;

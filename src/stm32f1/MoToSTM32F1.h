@@ -6,6 +6,7 @@
 extern uint8_t noStepISR_Cnt;   // Counter for nested StepISr-disable
 
 void seizeTimerAS();
+
 static inline __attribute__((__always_inline__)) void _noStepIRQ() {
     //timer_disable_irq(MT_TIMER, TIMER_STEPCH_IRQ);
     *bb_perip(&(MT_TIMER->regs).adv->DIER, TIMER_STEPCH_IRQ) = 0;
@@ -14,7 +15,7 @@ static inline __attribute__((__always_inline__)) void _noStepIRQ() {
     //nvic_globalirq_disable();
     #if defined COMPILING_MOTOSTEPPER_CPP
         //Serial.println(noStepISR_Cnt);
-        SET_TP3;
+        //SET_TP4;
     #endif
 }
 static inline __attribute__((__always_inline__)) void  _stepIRQ(bool force = false) {
@@ -23,7 +24,7 @@ static inline __attribute__((__always_inline__)) void  _stepIRQ(bool force = fal
     if ( noStepISR_Cnt > 0 ) noStepISR_Cnt -= 1; // don't decrease if already 0 ( if enabling IRQ is called too often )
     if ( noStepISR_Cnt == 0 ) {
         #if defined COMPILING_MOTOSTEPPER_CPP
-            CLR_TP3;
+            //CLR_TP4;
         #endif
         *bb_perip(&(MT_TIMER->regs).adv->DIER, TIMER_STEPCH_IRQ) = 1;
         //nvic_globalirq_enable();
@@ -61,6 +62,7 @@ static inline __attribute__((__always_inline__)) void setServoCmpAS(uint16_t cmp
 /////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined COMPILING_MOTOSOFTLED32_CPP
 static inline __attribute__((__always_inline__)) void enableSoftLedIsrAS() {
+    timer_attach_interrupt(MT_TIMER,TIMER_STEPCH_IRQ, ISR_Stepper );
     timer_cc_enable(MT_TIMER, STEP_CHN);
 }
 
@@ -70,7 +72,10 @@ static inline __attribute__((__always_inline__)) void enableSoftLedIsrAS() {
 #if defined COMPILING_MOTOSTEPPER_CPP
 
 static inline __attribute__((__always_inline__)) void enableStepperIsrAS() {
+	SET_TP3;
+    timer_attach_interrupt(MT_TIMER,TIMER_STEPCH_IRQ, ISR_Stepper );
     timer_cc_enable(MT_TIMER, STEP_CHN);
+	CLR_TP3;
 }
 
 static uint8_t spiInitialized = false;
