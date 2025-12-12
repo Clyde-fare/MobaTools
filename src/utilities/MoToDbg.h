@@ -5,9 +5,9 @@
 //#define debugTP
 //#define debugPrint
 
-// über diese undefs kann das Debugging global abgeschaltet werden
-#undef debugTP
-#undef debugPrint
+// über diese undef's kann das Debugging global abgeschaltet werden
+//#undef debugTP
+//#undef debugPrint
 
 #ifdef debugTP 
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -142,10 +142,10 @@
          
     #elif defined ESP32 || defined __SAMD__ // using standard Arduino digitalWrite
 		#ifdef ESP32
-			#define TP1 15
-			#define TP2 21
-			#define TP3 14
-			#define TP4 13
+			#define TP1 22	//A5
+			#define TP2 21	//A4
+			#define TP3 15	//10
+			#define TP4 13	//11
 		#elif defined __SAMD__
 			#warning "debug ports for Samd active"
 			#define TP1 A0

@@ -7,7 +7,7 @@
 */
 #define COMPILING_MOTOSTEPPER_CPP
 
-#define debugTP
+//#define debugTP
 #define debugPrint
 #include <MobaTools.h>
 #define TODO	// ignore 
@@ -518,7 +518,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
             // stepper does not move -> start a new move
 			// because it's not moving it maybe a slave in a synced move
             if ( stepValue != 0 ) {
-				SET_TP1;
+				//SET_TP1;
                 // we must move
                 if ( stepValue > 0 ) patternIxInc = abs( _stepperData.patternIxInc );
                 else     patternIxInc = -abs( _stepperData.patternIxInc );
@@ -565,7 +565,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
                 _stepperData.stepsInRamp    = 0;
                 _stepperData.stepCnt        = stepCnt;
                 _stepIRQ();
-				CLR_TP1;
+				//CLR_TP1;
                 //DB_PRINT("New Move: Steps:%ld, Enable=%d - State=%s(%d)", (long)stepValue, (int)digitalRead(_stepperData.enablePin) , rsC[(int)_stepperData.rampState],(int)_stepperData.rampState );
             }
         }

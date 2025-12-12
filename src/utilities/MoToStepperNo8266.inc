@@ -69,7 +69,7 @@ bool IRAM_ATTR setStepperPins( stepperData_t *stepperDataP, uint8_t stepPattern 
 
 #pragma GCC optimize "O3"   // optimize ISR for speed
 void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
-    SET_TP2;
+    //SET_TP2;
     static const int DRAM_ATTR stepPattern[8] = {0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001,0b0001 };
     stepperData_t *stepperDataP;         // actual stepper data in IRQ
 	stepperSyncData_t *locSyncDataP;	 // Data for synchronous move ( =NULL if no sync move active )
@@ -261,7 +261,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 }
                 // --------------- compute nexte steplength ------------------------------------
 				// --------------- This is not done on slave steppers in sync moves ------------
-				SET_TP3;
+				//SET_TP3;
 				if ( stepperDataP->syncMode != syncStat::SLAVE ) {
 					//SET_TP2;
 					// ramp state machine
@@ -391,7 +391,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					// set aCycSteps to max, so that no step is generated, until master sets aCycSteps again
 					stepperDataP->aCycSteps = UINT_MAX;
 				}
-                CLR_TP3;
+                //CLR_TP3;
 				//if ( locSyncDataP != NULL && locSyncDataP->ratioToMaster == 0 ) {
 				if ( stepperDataP->syncMode == syncStat::MASTER ) {
 					// we are in a synced move and it's the master
@@ -403,7 +403,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					while ( slavePtr != locSyncDataP ) { // until we reach the master entry again}
 						slaveStep = 0;
 						if ( slavePtr->stepsToMove != 0 ) {
-							SET_TP3;
+							//SET_TP3;
 							// slave has not reached its end position
 							if (  stepperDataP->stepCnt == 0 ) {
 								// Last step of master -> last chance to create a slave-step, no matter what ratioCnt is
@@ -421,7 +421,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 							}
 							if ( slaveStep>0) {
 								// create a step for the slave
-								CLR_TP2;
+								//CLR_TP2;
 								nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
 								slavePtr->stepperDataP->aCycSteps = slaveStep;
 								slavePtr->stepperDataP->cycCnt = 0;
@@ -429,11 +429,11 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 								slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
 								//SET_TP2;
 							}
-							CLR_TP3;
+							//CLR_TP3;
 						}
 						slavePtr = slavePtr->nextSyncData; // Check next stepper until we reach our own ptr
 					}
-					CLR_TP2; 	//digitalWrite(A1, LOW);
+					//CLR_TP2; 	//digitalWrite(A1, LOW);
 				}
 
             } // End of do one step
@@ -502,14 +502,14 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
         startSpiWriteAS( spiStepperData );
         //CLR_TP4;
     }
-    CLR_TP2;
+    //CLR_TP2;
 } // ==================== End of stepper ISR ======================================
 #pragma GCC optimize "Os"
 
 uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
     // Set speed and length of ramp to reach speed ( from stop )
     // neagtive ramplen means it was set automatically
-     SET_TP4;
+    //SET_TP4;
     rampStat newRampState;      // State of acceleration/deceleration
     uintxx_t tCycSteps;         // nbr of IRQ cycles per step ( new target value of motorspeed  )
 	#ifndef IS_32BIT
@@ -601,12 +601,12 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
         // local variables to hold data that might change in IRQ:
         // If there was a step during recomputing the rampvalues, we must recompute again
         // recomputing the rampvalues lasts too long to stop the IRQ during the whole time
-        CLR_TP4;
+        //CLR_TP4;
         uint32_t        __stepCnt;
         uint32_t        __newStepCnt;
         uint32_t        __newStepCnt2;
         uint8_t loopCnt = 5;
-        do { CLR_TP3;
+        do { //CLR_TP3;
             // read actual ISR values
             newRampState = _stepperData.rampState;
             __stepCnt       =  _stepperData.stepCnt; 
@@ -658,7 +658,7 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
                 newRampState = rampStat::RAMPDECEL;
             }
             if (loopCnt ) _noStepIRQ(); //SET_TP2;
-            SET_TP3;
+            //SET_TP3;
             //Serial.print(" ) ");Serial.print(_stepperData.rampState);
         } while ( __stepCnt != _stepperData.stepCnt && loopCnt ); // if there was a step during computing, do it again
         _stepperData.rampState = newRampState;
@@ -676,9 +676,9 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
 	#endif
     _stepperData.cyctXramplen = newCyctXramplen;
     _stepperData.stepRampLen = newRampLen;
-    _stepIRQ(true); CLR_TP4;
+    _stepIRQ(true); //CLR_TP4;
     _stepSpeed10 = speed10 == 0? 0 : newSpeed10;
-    CLR_TP4;
+    //CLR_TP4;
     prDynData();
     return _stepperData.stepRampLen;
 }

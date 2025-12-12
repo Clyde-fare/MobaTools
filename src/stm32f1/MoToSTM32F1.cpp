@@ -17,7 +17,7 @@ static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
 void ISR_Stepper() {
     // Timer4 Channel 1, used for stepper motor and softleds, starts every nextCycle us
     // nextCycle ist set in stepperISR and softledISR
-    SET_TP1;
+    //SET_TP1;
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
     if ( stepperISR ) stepperISR(cyclesLastIRQ);
     //============  End of steppermotor ======================================
@@ -52,7 +52,7 @@ void ISR_Stepper() {
 	
     timer_set_compare( MT_TIMER, STEP_CHN, actCompare+add2Ocr ) ;
     cyclesLastIRQ = nextCycle;
-    CLR_TP1; // Oszimessung Dauer der ISR-Routine
+    //CLR_TP1; // Oszimessung Dauer der ISR-Routine
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
 void seizeTimerAS() {
@@ -70,7 +70,7 @@ void seizeTimerAS() {
         timer_set_prescaler(MT_TIMER, 36-1 );    // = 0.5µs Tics at 72MHz
         timer_set_reload(MT_TIMER, TIMERPERIODE * TICS_PER_MICROSECOND );
         timer_set_compare(MT_TIMER, STEP_CHN, 400 );
-        timer_attach_interrupt(MT_TIMER, TIMER_STEPCH_IRQ, (voidFuncPtr)ISR_Stepper );
+        //timer_attach_interrupt(MT_TIMER, TIMER_STEPCH_IRQ, (voidFuncPtr)ISR_Stepper );
         timer_set_compare(MT_TIMER, SERVO_CHN, FIRST_PULSE );
         timer_resume(MT_TIMER);
         timerInitialized = true;  

@@ -72,10 +72,10 @@ static inline __attribute__((__always_inline__)) void enableSoftLedIsrAS() {
 #if defined COMPILING_MOTOSTEPPER_CPP
 
 static inline __attribute__((__always_inline__)) void enableStepperIsrAS() {
-	SET_TP3;
+	//SET_TP3;
     timer_attach_interrupt(MT_TIMER,TIMER_STEPCH_IRQ, ISR_Stepper );
     timer_cc_enable(MT_TIMER, STEP_CHN);
-	CLR_TP3;
+	//CLR_TP3;
 }
 
 static uint8_t spiInitialized = false;

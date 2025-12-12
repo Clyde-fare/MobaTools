@@ -1,11 +1,10 @@
 // ESP32 HW-spcific Functions
-#include <MobaTools.h>  // Values for ...TARGET_ESP32xx are defined here
-#if CONFIG_IDF_TARGET_ESP32
-#pragma message "compiling MoToESP32"
-
 #define debugTP
 #define debugPrint
-#include <utilities/MoToDbg.h>
+#include <MobaTools.h>  // Values for ...TARGET_ESP32xx are defined here
+#if CONFIG_IDF_TARGET_ESP32
+#pragma message "Info: compiling MoToESP32"
+
 
 //#warning "HW specfic - ESP32 ---"
 
@@ -54,7 +53,6 @@ hw_timer_t * stepTimer = NULL;
 void seizeTimerAS() {
 static bool timerInitialized = false;
     // Initiieren des Stepper Timers ------------------------
-	Serial.println("Timer initialize");
 	DB_PRINT("Timer initialize = %d\n\r", timerInitialized);
     if ( !timerInitialized ) {
 		#if (ESP_ARDUINO_VERSION_MAJOR == 2)
@@ -74,7 +72,6 @@ static bool timerInitialized = false;
 		 #error "ESP-core version unsupported"
 		#endif
 		DB_PRINT("Timer eingerichtet\n\r");	
-		Serial.println("Timer eingerichtet\n\r");	
         timerInitialized = true;  
         MODE_TP1;   // set debug-pins to Output
         MODE_TP2;
@@ -92,8 +89,8 @@ void enableSoftLedIsrAS() {
 
 }
 
-// only for test
+/* only for test
 #else
 	#pragma message "ESP32 ( noS3) is not compüiled"
-// end test
+// end test*/
 #endif

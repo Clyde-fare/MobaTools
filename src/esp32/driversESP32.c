@@ -1,7 +1,7 @@
 // ESP32 HW-spcific Functions
 #include <Arduino.h>
 #if CONFIG_IDF_TARGET_ESP32
-#pragma message "compiling driversESP32 - no ESP32S3 Board"
+#pragma message "Info: compiling driversESP32 - not a ESP32S3 Board"
 // Logging
 #include "drivers.h"
 
