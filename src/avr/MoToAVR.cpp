@@ -1,10 +1,10 @@
 // AVR HW-spcific Functions
 #ifdef ARDUINO_ARCH_AVR
-#define debugTP
+//#define debugTP
 //#define debugPrint
 #include <MobaTools.h>
 
-//#warning "HW specfic - avr ---"
+//#pragma message "HW specfic - avr ---"
 
 uint8_t noStepISR_Cnt;   // Counter for nested StepISr-disable
 

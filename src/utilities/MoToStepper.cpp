@@ -562,6 +562,24 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 					#endif
 				}
                 _stepperData.patternIxInc   = patternIxInc;
+				// tSetupDIR: - Set dir OUTPUT if in STEPDIR mode
+				if ( stepMode == STEPDIR ) {
+					if ( _stepperData.patternIxInc > 0 ) {
+						// turn forward 
+						#ifdef FAST_PORTWRT
+						*_stepperData.portPins[1].Adr |= _stepperData.portPins[1].Mask;
+						#else
+						digitalWrite( _stepperData.pins[1], HIGH );
+						#endif
+					} else {
+						// turn backwards
+						#ifdef FAST_PORTWRT
+						*_stepperData.portPins[1].Adr &= _stepperData.portPins[1].Mask;
+						#else
+						digitalWrite( _stepperData.pins[1], LOW );
+						#endif
+					}
+				}
                 _stepperData.stepsInRamp    = 0;
                 _stepperData.stepCnt        = stepCnt;
                 _stepIRQ();
@@ -577,6 +595,24 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
         // When moving to abs position, adjust stepCnt if there have been new steps
         if ( absPos ) stepCnt = abs( stepValue + lastSFZ - _stepperData.stepsFromZero );
         _stepperData.patternIxInc = patternIxInc;
+		// tSetupDIR: - Set dir OUTPUT if in STEPDIR mode
+		if ( stepMode == STEPDIR ) {
+			if ( _stepperData.patternIxInc > 0 ) {
+				// turn forward 
+				#ifdef FAST_PORTWRT
+				*_stepperData.portPins[1].Adr |= _stepperData.portPins[1].Mask;
+				#else
+				digitalWrite( _stepperData.pins[1], HIGH );
+				#endif
+			} else {
+				// turn backwards
+				#ifdef FAST_PORTWRT
+				*_stepperData.portPins[1].Adr &= _stepperData.portPins[1].Mask;
+				#else
+				digitalWrite( _stepperData.pins[1], LOW );
+				#endif
+			}
+		}
         _stepperData.stepCnt = stepCnt;
         if ( stepValue == 0 ) {
             // No steps to do and without Ramp: immediate stop

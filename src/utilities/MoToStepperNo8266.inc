@@ -101,6 +101,25 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
             resetPulse = true;
 			#endif
             #endif
+			
+			// if needed dir output for next stepping pulse must be changed here
+			// tSetupDIR: - change DIR output already here ( TODO check if hold-time is sufficent )
+			// TODO set only if needed
+			if ( stepperDataP->patternIxInc > 0 ) {
+				// turn forward 
+				#ifdef FAST_PORTWRT
+				*stepperDataP->portPins[1].Adr |= stepperDataP->portPins[1].Mask;
+				#else
+				digitalWrite( stepperDataP->pins[1], HIGH );
+				#endif
+			} else {
+				// turn backwards
+				#ifdef FAST_PORTWRT
+				*stepperDataP->portPins[1].Adr &= ~stepperDataP->portPins[1].Mask;
+				#else
+				digitalWrite( stepperDataP->pins[1], LOW );
+				#endif
+			}
         } // end of resetting step pulse
 		
         if ( stepperDataP->rampState >= rampStat::CRUISING &&  stepperDataP->speedZero != ZEROSPEEDACTIVE ) {
@@ -189,22 +208,8 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     break;
                   case STEPDIR_PINS : // output step-pulse and direction
                     // direction first
-                    //SET_TP2;
-                    if ( stepperDataP->patternIxInc > 0 ) {
-                        // turn forward 
-                        #ifdef FAST_PORTWRT
-                        *stepperDataP->portPins[1].Adr |= stepperDataP->portPins[1].Mask;
-                        #else
-                        digitalWrite( stepperDataP->pins[1], HIGH );
-                        #endif
-                    } else {
-                        // turn backwards
-                        #ifdef FAST_PORTWRT
-                        *stepperDataP->portPins[1].Adr &= ~stepperDataP->portPins[1].Mask;
-                        #else
-                        digitalWrite( stepperDataP->pins[1], LOW );
-                        #endif
-                    }    
+					// tSetupDIR: - don't set DIR-ouput immediately before step pulse. It must be done
+					// previously because of dir-setuptime of HW
                     // Set step pulse 
                     nextCycle = MIN_STEP_CYCLE/2; // will be resettet in half of min steptime
                     #ifdef FAST_PORTWRT
