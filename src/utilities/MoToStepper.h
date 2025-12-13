@@ -94,6 +94,7 @@ typedef struct stepperData_t {
   volatile uint32_t stepCnt;    // nmbr of steps to take
   uint32_t stepCnt2;            // nmbr of steps to take after automatic reverse
   volatile int8_t patternIx;    // Pattern-Index of actual Step (0-7)
+								// in STEPDIR mode this is used as flag, that a a change at the dir-pin is needed
   int8_t   patternIxInc;        // halfstep: +/-1, fullstep: +/-2, STEPDIR +1/-1  the sign defines direction
   #ifdef ESP8266
 	// on ESP8266 all time values are in µs

@@ -8,7 +8,7 @@
 #define COMPILING_MOTOSTEPPER_CPP
 
 //#define debugTP
-#define debugPrint
+//#define debugPrint
 #include <MobaTools.h>
 #define TODO	// ignore 
 // Global Data for all instances and classes  --------------------------------
@@ -574,7 +574,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 					} else {
 						// turn backwards
 						#ifdef FAST_PORTWRT
-						*_stepperData.portPins[1].Adr &= _stepperData.portPins[1].Mask;
+						*_stepperData.portPins[1].Adr &= ~_stepperData.portPins[1].Mask;
 						#else
 						digitalWrite( _stepperData.pins[1], LOW );
 						#endif
@@ -607,7 +607,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 			} else {
 				// turn backwards
 				#ifdef FAST_PORTWRT
-				*_stepperData.portPins[1].Adr &= _stepperData.portPins[1].Mask;
+				*_stepperData.portPins[1].Adr &= ~_stepperData.portPins[1].Mask;
 				#else
 				digitalWrite( _stepperData.pins[1], LOW );
 				#endif
@@ -657,6 +657,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 			}
         }
         _stepIRQ();
+		DB_PRINT("DoStepsNoRamp, absPos=%d, lastSFZ=%ld, patternIxInc=%d, stepCnt=%ld", (int)absPos, lastSFZ, (int)_stepperData.patternIxInc,stepCnt);
         //DB_PRINT( "NoRamp:, sCnt=%ld, sCnt2=%ld, sMove=%ld, aCyc=%d", _stepperData.stepCnt, _stepperData.stepCnt2, stepsToMove, _stepperData.aCycSteps );
 
     }
@@ -796,12 +797,21 @@ uint8_t MoToStepper::moving() { //##############################################
     tmp = _stepperData.stepCnt + _stepperData.stepCnt2;
     _stepIRQ();  // enable stepper IRQ
     if ( tmp > 0 ) {
-        // do NOT return 0, even if less than 1%, because 0 means real stop of the motor
+        // +1 becase we will not NOT return 0, even if less than 1%, because 0 means real stop of the motor
         if ( tmp < 2147483647L / 100 )
             tmp = (tmp * 100 / (abs( stepsToMove)+1) ) + 1;
         else
             tmp =  (tmp  / (( abs( stepsToMove)+1) / 100 ) ) + 1;
-    }
+    } else {
+		// in STEPDIR mode check if step pulse is still active ( return '0' only AFTER last pulse )
+        #ifdef FAST_PORTWRT
+        if ( _stepperData.output == STEPDIR_PINS && (*_stepperData.portPins[0].Adr & _stepperData.portPins[0].Mask) ) {
+        #else
+		if ( _stepperDataP.output == STEPDIR_PINS && digitalRead( _stepperData.pins[0] ) ) {
+		#endif
+		tmp=1;
+		}
+	}
     if ( tmp > 255 ) tmp=255;
     return tmp ;
 }

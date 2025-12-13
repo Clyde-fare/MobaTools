@@ -84,46 +84,47 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     while ( stepperDataP != NULL ) {
 		locSyncDataP = stepperDataP->syncDataP;	// Pointer to sync move data of this stepper ( =NULL if no sync move active)
 		
-        #ifdef IS_32BIT
-        bool resetPulse = false; // for 32Bit reset pulse und setting new pulse is never done in same IRQ
-        if ( stepperDataP->output == STEPDIR_PINS && digitalRead(stepperDataP->pins[0]) ) {
-        #else
-        if ( stepperDataP->output == STEPDIR_PINS  ) {
-        #endif
+        bool resetPulse = false; // reset pulse und setting new pulse is never done in same IRQ
+        #ifdef FAST_PORTWRT
+        if ( stepperDataP->output == STEPDIR_PINS && (*stepperDataP->portPins[0].Adr & stepperDataP->portPins[0].Mask) ) {
             // reset step pulse - pulse is max one cycle length
-            #ifdef FAST_PORTWRT
-            noInterrupts();
+            noInterrupts(); // it's a read-modify-write and on AVR we have reenabled interrupts
             *stepperDataP->portPins[0].Adr &= ~stepperDataP->portPins[0].Mask;
             interrupts();
             #else
+		if ( stepperDataP->output == STEPDIR_PINS && digitalRead( stepperDataP->pins[0] ) ) {
             digitalWrite( stepperDataP->pins[0], LOW );
-			#ifdef IS_32BIT
-            resetPulse = true;
-			#endif
             #endif
-			
-			// if needed dir output for next stepping pulse must be changed here
-			// tSetupDIR: - change DIR output already here ( TODO check if hold-time is sufficent )
-			// TODO set only if needed
-			if ( stepperDataP->patternIxInc > 0 ) {
-				// turn forward 
-				#ifdef FAST_PORTWRT
-				*stepperDataP->portPins[1].Adr |= stepperDataP->portPins[1].Mask;
-				#else
-				digitalWrite( stepperDataP->pins[1], HIGH );
-				#endif
-			} else {
-				// turn backwards
-				#ifdef FAST_PORTWRT
-				*stepperDataP->portPins[1].Adr &= ~stepperDataP->portPins[1].Mask;
-				#else
-				digitalWrite( stepperDataP->pins[1], LOW );
-				#endif
-			}
+			resetPulse = true;
+			// Check if direction must be changed
+			if ( stepperDataP->patternIx == 1 ) {  // flag for dir change
+                nextCycle = MIN_STEP_CYCLE/2; // will be changed in half of min steptime
+			}	
         } // end of resetting step pulse
 		
         if ( stepperDataP->rampState >= rampStat::CRUISING &&  stepperDataP->speedZero != ZEROSPEEDACTIVE ) {
             // only active motors with speed > 0
+			// tSetupDIR: - change DIR output here if needed
+			// if needed dir output for next stepping pulse must be changed here
+			if  ( stepperDataP->output == STEPDIR_PINS && stepperDataP->patternIx == 1 && !resetPulse ) {
+				if ( stepperDataP->patternIxInc > 0 ) {
+					// turn forward 
+					#ifdef FAST_PORTWRT
+					*stepperDataP->portPins[1].Adr |= stepperDataP->portPins[1].Mask;
+					#else
+					digitalWrite( stepperDataP->pins[1], HIGH );
+					#endif
+				} else {
+					// turn backwards
+					#ifdef FAST_PORTWRT
+					*stepperDataP->portPins[1].Adr &= ~stepperDataP->portPins[1].Mask;
+					#else
+					digitalWrite( stepperDataP->pins[1], LOW );
+					#endif
+				}
+				stepperDataP->patternIx = 0; // reset dir-change flags
+			}
+			// Now check if a step is due
             if ( stepperDataP->aCycSteps ) stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;  // using '+=' made some problems here ... ???
             #ifdef IS_32BIT
             if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps ) && !resetPulse ) {
@@ -218,6 +219,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					digitalWrite( stepperDataP->pins[0], HIGH );
                     //SET_TP4;
                     #endif
+					stepperDataP->patternIx = 0; // changed to 1 later, if a dir-change is due
                     break;
                   default:
                     // should never be reached
@@ -236,6 +238,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     if (stepperDataP->stepCnt2 > 0 ) { // check if we have to start a movement backwards
                         // yes, change Direction and go stpCnt2 Steps
                         stepperDataP->patternIxInc = -stepperDataP->patternIxInc;
+						stepperDataP->patternIx = 1;  // flag for dir change
                         stepperDataP->stepCnt = stepperDataP->stepCnt2;
                         stepperDataP->stepCnt2 = 0;
                         stepperDataP->rampState = rampStat::RAMPACCEL;

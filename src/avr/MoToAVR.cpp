@@ -1,6 +1,6 @@
 // AVR HW-spcific Functions
 #ifdef ARDUINO_ARCH_AVR
-//#define debugTP
+#define debugTP
 //#define debugPrint
 #include <MobaTools.h>
 

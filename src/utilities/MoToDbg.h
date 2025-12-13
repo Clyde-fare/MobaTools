@@ -6,8 +6,8 @@
 //#define debugPrint
 
 // über diese undef's kann das Debugging global abgeschaltet werden
-#undef debugTP
-#undef debugPrint
+//#undef debugTP
+//#undef debugPrint
 
 #ifdef debugTP 
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -37,7 +37,7 @@
         #define SET_TP4 PORTB |= (1<<7)
         #define CLR_TP4 PORTB &= ~(1<<7)
     #elif defined(__AVR_ATmega328P__) 
-        #warning "Debug-Ports active"
+        #pragma message "Info: 328P - Debug-Ports active"
         #define MODE_TP1 DDRC |= (1<<0) //A0
         #define SET_TP1 PORTC |= (1<<0)
         #define CLR_TP1 PORTC &= ~(1<<0)
