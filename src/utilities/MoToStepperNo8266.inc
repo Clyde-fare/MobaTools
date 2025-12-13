@@ -238,7 +238,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     if (stepperDataP->stepCnt2 > 0 ) { // check if we have to start a movement backwards
                         // yes, change Direction and go stpCnt2 Steps
                         stepperDataP->patternIxInc = -stepperDataP->patternIxInc;
-						stepperDataP->patternIx = 1;  // flag for dir change
+						if (stepperDataP->output == STEPDIR_PINS) stepperDataP->patternIx = 1;  // flag for dir change
                         stepperDataP->stepCnt = stepperDataP->stepCnt2;
                         stepperDataP->stepCnt2 = 0;
                         stepperDataP->rampState = rampStat::RAMPACCEL;

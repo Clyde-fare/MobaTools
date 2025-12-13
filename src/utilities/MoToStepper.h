@@ -167,7 +167,7 @@ class MoToStepper
 {
     friend class MoToSyncStepper;	// MoToSyncStepper needs access to _stepperData
   private:
-    static outUsed_t outputsUsed;
+    static outUsed_t outputsUsed;	// to check against multipöe use of SPI positions
     static byte     _stepperCount;  // number of objects ( objectcounter )
     stepperData_t _stepperData;      // Variables that are used in IRQ
     uint8_t _stepperIx;              // Objectnumber ( 0 ... MAX_STEPPER )
