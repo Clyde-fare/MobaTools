@@ -84,57 +84,38 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     while ( stepperDataP != NULL ) {
 		locSyncDataP = stepperDataP->syncDataP;	// Pointer to sync move data of this stepper ( =NULL if no sync move active)
 		
-        bool resetPulse = false; // reset pulse und setting new pulse is never done in same IRQ
-        #ifdef FAST_PORTWRT
-        if ( stepperDataP->output == STEPDIR_PINS && (*stepperDataP->portPins[0].Adr & stepperDataP->portPins[0].Mask) ) {
-            // reset step pulse - pulse is max one cycle length
-            noInterrupts(); // it's a read-modify-write and on AVR we have reenabled interrupts
-            *stepperDataP->portPins[0].Adr &= ~stepperDataP->portPins[0].Mask;
-            interrupts();
-            #else
-		if ( stepperDataP->output == STEPDIR_PINS && digitalRead( stepperDataP->pins[0] ) ) {
-            digitalWrite( stepperDataP->pins[0], LOW );
-            #endif
+        bool resetPulse = false; // reset pulse and changing dir is never done in same IRQ
+		if ( stepperDataP->stepActive>0 ) { // stepActive is always 0 in FULL and HALFSTEP
+			stepperWrite( stepperDataP, 0, 0 );
+			stepperDataP->stepActive = 0;
 			resetPulse = true;
 			// Check if direction must be changed
 			if ( stepperDataP->patternIx == 1 ) {  // flag for dir change
                 nextCycle = MIN_STEP_CYCLE/2; // will be changed in half of min steptime
 			}	
-        } // end of resetting step pulse
-		
+		}
         if ( stepperDataP->rampState >= rampStat::CRUISING &&  stepperDataP->speedZero != ZEROSPEEDACTIVE ) {
             // only active motors with speed > 0
 			// tSetupDIR: - change DIR output here if needed
 			// if needed dir output for next stepping pulse must be changed here
 			if  ( stepperDataP->output == STEPDIR_PINS && stepperDataP->patternIx == 1 && !resetPulse ) {
-				if ( stepperDataP->patternIxInc > 0 ) {
-					// turn forward 
-					#ifdef FAST_PORTWRT
-					*stepperDataP->portPins[1].Adr |= stepperDataP->portPins[1].Mask;
-					#else
-					digitalWrite( stepperDataP->pins[1], HIGH );
-					#endif
-				} else {
-					// turn backwards
-					#ifdef FAST_PORTWRT
-					*stepperDataP->portPins[1].Adr &= ~stepperDataP->portPins[1].Mask;
-					#else
-					digitalWrite( stepperDataP->pins[1], LOW );
-					#endif
-				}
+				stepperWrite( stepperDataP, 1, (stepperDataP->patternIxInc > 0) );
 				stepperDataP->patternIx = 0; // reset dir-change flags
 			}
 			// Now check if a step is due
-            if ( stepperDataP->aCycSteps ) stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;  // using '+=' made some problems here ... ???
-            #ifdef IS_32BIT
-            if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps ) && !resetPulse ) {
+            if ( stepperDataP->aCycSteps ) stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;  // using '+=' made problems here at ESP32
+			// ->cycCnt now contains the cycles since the last step was generated.
+            #ifdef IS_32BIT 
+            if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps )  && !resetPulse ) {
                 //SET_TP2;
+				// let's see if we are a lot too late ( cycCnt is much higher than the needed aCyclSteps ?)
+				// if yes we will time the next step a little bit earlier by setting cycCnt to positive value insted of 0
                 stepperDataP->cycCnt = stepperDataP->cycCnt - stepperDataP->aCycSteps ;
                 // 'Aufholen' zu langsamer Interrupts begrenzen
-                // cycCnt darf nie größer als aCycSteps werden ( maximale Steprate )!
-                if ( stepperDataP->cycCnt >= stepperDataP->aCycSteps+MAX_JITTER ) { 
+                // cycCnt darf nie größer als MAX_JITTER ( maximale Aufhorate )!
+                if ( stepperDataP->cycCnt >= MAX_JITTER ) { 
                     //SET_TP4; 
-                    stepperDataP->cycCnt = stepperDataP->aCycSteps+MAX_JITTER; 
+                    stepperDataP->cycCnt = MAX_JITTER; 
                 }
                 //CLR_TP4;
             #else // not 32bit ( never use a jitter computing )
@@ -145,7 +126,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 //SET_TP2;
                 // Do one step
                 // update position for absolute positioning
-                //stepperDataP->stepsFromZero += stepperDataP->patternIxInc;
+                //stepperDataP->stepsFromZero += stepperDataP->patternIxInc; // seemingly doesn't work reliably on ESP32
                 stepperDataP->stepsFromZero = stepperDataP->stepsFromZero +stepperDataP->patternIxInc;
                 
                 // sign of patternIxInc defines direction
@@ -213,12 +194,8 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					// previously because of dir-setuptime of HW
                     // Set step pulse 
                     nextCycle = MIN_STEP_CYCLE/2; // will be resettet in half of min steptime
-                    #ifdef FAST_PORTWRT
-                    *stepperDataP->portPins[0].Adr |= stepperDataP->portPins[0].Mask;
-                    #else
-					digitalWrite( stepperDataP->pins[0], HIGH );
-                    //SET_TP4;
-                    #endif
+					stepperWrite( stepperDataP, 0, 1 );
+					stepperDataP->stepActive = 1;
 					stepperDataP->patternIx = 0; // changed to 1 later, if a dir-change is due
                     break;
                   default:
@@ -432,7 +409,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 								//CLR_TP2;
 								nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, slaveStep+MAX_JITTER );
 								slavePtr->stepperDataP->aCycSteps = slaveStep;
-								slavePtr->stepperDataP->cycCnt = 0;
+								slavePtr->stepperDataP->cycCnt = 0; //Start counting slave cycles until slave step is due
 								//Reset ratio counter for slave
 								slavePtr->ratioCnt = slavePtr->ratioToMaster - ( RATIOBASE-slavePtr->ratioCnt);
 								//SET_TP2;
@@ -446,8 +423,8 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 
             } // End of do one step
 			//CLR_TP2;
-            #ifdef IS_32BIT
-            // check if max possible speed - is made at the beginning of the ISR
+            #ifdef NOIS_32BIT // Unklar - wird erstmal micht genutzt
+            // check if max possible speed - is made at the beginning of the ISR ( cycCnt may have benn set to value > 0 there)
             if ( stepperDataP->aCycSteps+MAX_JITTER < stepperDataP->cycCnt ) {
                 stepperDataP->cycCnt = stepperDataP->aCycSteps+MAX_JITTER ;
                 //SET_TP2; 

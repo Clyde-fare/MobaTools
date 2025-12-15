@@ -35,7 +35,7 @@
 #define CYCLETIME       1     // Cycle count in µs on 32Bit processors
 #define TICS_PER_MICROSECOND 1 // RP2040 timer is clocked with 1MHz
 #define WITH_PRINTF           // Core supports printf command
-#define MAX_JITTER (MIN_STEP_CYCLE/2)
+#define MAX_JITTER (MIN_STEP_CYCLE*2) //Maximum correction factor for delayed pulses TODO - ???
 
 // Definition of used  Hw und IRQ's ( Timer/PWM/SPI )
 // by default MoToStepper uses alarm 4 of timer 1

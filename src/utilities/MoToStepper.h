@@ -148,6 +148,7 @@ typedef struct stepperData_t {
   uint8_t pins[4];                 // Outputpins as Arduino numbers
   #endif
   uint8_t lastPattern;             // only changed pins are updated ( is faster )
+  uint8_t stepActive;			// step is active ( to know when we must reset it ) 
 } stepperData_t ;
 
 typedef union { // used output channels as bit and uint8_t

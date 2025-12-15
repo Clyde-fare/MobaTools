@@ -13,7 +13,7 @@
 #define TODO	// ignore 
 // Global Data for all instances and classes  --------------------------------
 #ifdef debugPrint
-     const char *rsC[] = { "INACTIVE", "STOPPED", "STOPPING", "STARTING", "CRUISING", "LASTSTEP", "RAMPACCEL", "RAMPDECEL", "SPEEDDECEL" };    
+     const char *rsC[] = { "INACTIVE", "STOPPED", "SPEED0", "STOPPING", "STARTING", "CRUISING", "LASTSTEP", "RAMPACCEL", "RAMPDECEL", "SPEEDDECEL", "SYNCSLAVE" };    
 #endif
 #ifndef MAX_JITTER
 #define MAX_JITTER 0	// default ( behaves as in V2.6  )
@@ -22,6 +22,30 @@
 
 //==========================================================================
 // --------- Class Stepper ---------------------------------
+// function to set/reset the stepper outputs ( 2 or 4 Pins, identified by the index in pin-Array)
+static inline __attribute__((__always_inline__)) void stepperWrite( stepperData_t *dataP, uint8_t pinIx, uint8_t state ) {
+	// to set the stepper outputs ( step/dir or FULL/HALF step ) that are defined in .pins or .portPins
+	if ( state ) {
+		// set Pin
+		#ifdef FAST_PORTWRT
+        noInterrupts(); // it's a read-modify-write and on AVR we have reenabled interrupts
+		*dataP->portPins[pinIx].Adr |= dataP->portPins[pinIx].Mask;
+		interrupts();
+		#else
+		digitalWrite( dataP->pins[pinIx], HIGH );
+		#endif
+	} else {
+		// reset Pin
+		#ifdef FAST_PORTWRT
+        noInterrupts(); // it's a read-modify-write and on AVR we have reenabled interrupts
+		*dataP->portPins[pinIx].Adr &= ~dataP->portPins[pinIx].Mask;
+		interrupts();
+		#else
+		digitalWrite( dataP->pins[pinIx], LOW );
+		#endif
+	}
+
+}
 // Class-specific Variables
 outUsed_t MoToStepper::outputsUsed;
 byte MoToStepper::_stepperCount = 0;
@@ -70,13 +94,8 @@ void MoToStepper::initialize ( long steps360, uint8_t mode ) {
     _stepperData.stepCnt = 0;         // don't move
     _stepperData.patternIx = 0;
     _stepperData.patternIxInc = mode;         // positive direction
-	#ifdef ESP8266
-		_stepperData.aCycSteps = 0; // means no step
-		_stepperData.tCycSteps = _stepperData.aCycSteps; 
-	#else
-		_stepperData.aCycSteps = 0; //TIMERPERIODE; //MIN_STEPTIME/CYCLETIME; TODO V3.0 warum TIMERPERIODE in V2.7?
-		_stepperData.tCycSteps = _stepperData.aCycSteps; 
-	#endif
+	_stepperData.aCycSteps = 0; // means no step
+	_stepperData.tCycSteps = 0; 
 	#ifndef IS_32BIT
 	    _stepperData.tCycRemain = 0;                // work with remainder when cruising ( only 8-bit processors )
 	#endif
@@ -87,6 +106,7 @@ void MoToStepper::initialize ( long steps360, uint8_t mode ) {
     _stepperData.delayActiv = false;            	// enable delaytime is runnung ( only ESP)
     _stepperData.output = NO_OUTPUT;          		// unknown, not attached yet
     _stepperData.enablePin = NO_STEPPER_ENABLE;     // without enable (default)
+    _stepperData.stepActive = 0;					// only > 0 in STEPDIR while steppulse is active
 	_stepperData.enableOn = false;					// default if enable not active
     _stepperData.nextStepperDataP = NULL;
 	#ifndef ESP8266
@@ -211,6 +231,7 @@ uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
             digitalWrite( pins[i], LOW );
         }
 		_stepperData.patternIxInc = 1;  // defines direction
+		DB_PRINT("STEPRIR attached, %d, %d", pins[0], pins[1] );
         break;
      default:
         // invalid Arg
@@ -546,9 +567,9 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 						//digitalWrite( _stepperData.pins[1], patternIxInc<0 );      // setze dir-output
 						startMove = 1;
 					#else
-						_stepperData.cycCnt         = MAX_JITTER;            // start with the next IRQ
+						_stepperData.cycCnt         = 0;            // start with the next IRQ
 						_stepperData.aCycSteps 		= _stepperData.cyctXramplen / RAMPOFFSET ;	// create step after starttime of ramp
-						if ( _stepperData.aCycSteps < MIN_START_CYCLES ) _stepperData.aCycSteps  = MIN_START_CYCLES;
+						//if ( _stepperData.aCycSteps < MIN_START_CYCLES ) _stepperData.aCycSteps  = MIN_START_CYCLES;
 						#ifndef IS_32BIT
 						_stepperData.aCycRemain     = 0;  
 						#endif
@@ -564,21 +585,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
                 _stepperData.patternIxInc   = patternIxInc;
 				// tSetupDIR: - Set dir OUTPUT if in STEPDIR mode
 				if ( stepMode == STEPDIR ) {
-					if ( _stepperData.patternIxInc > 0 ) {
-						// turn forward 
-						#ifdef FAST_PORTWRT
-						*_stepperData.portPins[1].Adr |= _stepperData.portPins[1].Mask;
-						#else
-						digitalWrite( _stepperData.pins[1], HIGH );
-						#endif
-					} else {
-						// turn backwards
-						#ifdef FAST_PORTWRT
-						*_stepperData.portPins[1].Adr &= ~_stepperData.portPins[1].Mask;
-						#else
-						digitalWrite( _stepperData.pins[1], LOW );
-						#endif
-					}
+					stepperWrite( &_stepperData, 1, ( _stepperData.patternIxInc > 0 ) );
 				}
                 _stepperData.stepsInRamp    = 0;
                 _stepperData.stepCnt        = stepCnt;
@@ -597,21 +604,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
         _stepperData.patternIxInc = patternIxInc;
 		// tSetupDIR: - Set dir OUTPUT if in STEPDIR mode
 		if ( stepMode == STEPDIR ) {
-			if ( _stepperData.patternIxInc > 0 ) {
-				// turn forward 
-				#ifdef FAST_PORTWRT
-				*_stepperData.portPins[1].Adr |= _stepperData.portPins[1].Mask;
-				#else
-				digitalWrite( _stepperData.pins[1], HIGH );
-				#endif
-			} else {
-				// turn backwards
-				#ifdef FAST_PORTWRT
-				*_stepperData.portPins[1].Adr &= ~_stepperData.portPins[1].Mask;
-				#else
-				digitalWrite( _stepperData.pins[1], LOW );
-				#endif
-			}
+			stepperWrite( &_stepperData, 1, ( _stepperData.patternIxInc > 0 ) );
 		}
         _stepperData.stepCnt = stepCnt;
         if ( stepValue == 0 ) {
@@ -641,7 +634,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 					_stepperData.aCycSteps       = _stepperData.tCycSteps;
 					startMove = 1;
 				#else
-					_stepperData.cycCnt         = MAX_JITTER;            // start with the next IRQ
+					_stepperData.cycCnt         = 0;            // start with the next IRQ
 					_stepperData.aCycSteps      = _stepperData.tCycSteps; //MIN_START_CYCLES;
 					#ifndef IS_32BIT
 					_stepperData.aCycRemain     = 0; 
@@ -689,10 +682,10 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
     }
     //DB_PRINT( "newStepValues:, sMove=%ld, Speed10=%d", stepsToMove,  _stepSpeed10  );
     #else
-    //DB_PRINT( "StepValues:, sCnt=%ld, sCnt2=%ld, sMove=%ld, aCyc=%d", _stepperData.stepCnt, _stepperData.stepCnt2, stepsToMove, _stepperData.aCycSteps );
+    DB_PRINT( "StepValues:, sCnt=%ld, sCnt2=%ld, sMove=%ld, aCyc=%d", _stepperData.stepCnt, _stepperData.stepCnt2, stepsToMove, _stepperData.aCycSteps );
     //DB_PRINT( "RampValues:, Spd=%u, rmpLen=%u, tcyc=%u, trest=%u, acyc=%u", _stepSpeed10, _stepperData.stepRampLen,
     //                _stepperData.tCycSteps, _stepperData.tCycRemain, _stepperData.aCycSteps );
-    //DB_PRINT( "   - State=%s, Rampsteps=%u" , rsC[_stepperData.rampState], _stepperData.stepsInRamp );
+    DB_PRINT( "   - State=%s, Rampsteps=%u" , rsC[(int)_stepperData.rampState], _stepperData.stepsInRamp );
     #endif
     prDynData();
 	//CLR_TP1;
@@ -807,7 +800,7 @@ uint8_t MoToStepper::moving() { //##############################################
         #ifdef FAST_PORTWRT
         if ( _stepperData.output == STEPDIR_PINS && (*_stepperData.portPins[0].Adr & _stepperData.portPins[0].Mask) ) {
         #else
-		if ( _stepperDataP.output == STEPDIR_PINS && digitalRead( _stepperData.pins[0] ) ) {
+		if ( _stepperData.output == STEPDIR_PINS && digitalRead( _stepperData.pins[0] ) ) {
 		#endif
 		tmp=1;
 		}
