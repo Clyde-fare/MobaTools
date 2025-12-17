@@ -147,7 +147,9 @@ typedef struct stepperData_t {
   #else
   uint8_t pins[4];                 // Outputpins as Arduino numbers
   #endif
-  uint8_t lastPattern;             // only changed pins are updated ( is faster )
+  uint8_t lastPattern;          // in FULLSTEP and HALFSTEP only changed pins are updated ( is faster ) 
+	#define STEPINVERT 0x01			// in STEPDIR mode lastPattern is used to store the invert flags
+	#define DIRINVERT  0x02								
   uint8_t stepActive;			// step is active ( to know when we must reset it ) 
 } stepperData_t ;
 
@@ -199,12 +201,13 @@ class MoToStepper
     MoToStepper(long steps, uint8_t mode ); // with ESP8266 only STEPDIR is allowed
 	#ifndef ESP8266 				// there are no different modes with ESP8266
                                         // mode means STEPDIR ( Step/Dir), HALFSTEP or FULLSTEP
-        //Methods                                
+        //Methods - not for ESP8266                               
         uint8_t attach( uint8_t,uint8_t,uint8_t,uint8_t); //single pins definition for output
         uint8_t attach(uint8_t outArg);    // stepMode defaults to halfstep
 		void attachEnable( uint16_t delay ); // enable for unipolar steppers with 4 pins
     #endif
-    uint8_t attach( uint8_t stepP, uint8_t dirP); // Port for step and direction in STEPDIR mode
+	// Methods for all supported boards
+    uint8_t attach( int stepP,int dirP); // Port for step and direction in STEPDIR mode
                                     // returns 0 on failure
     void attachEnable( uint8_t enableP, uint16_t delay, bool active ); // define an enable pin and the delay (ms) between enable and starting/stopping the motor. 
                                                                           // 'active' defines if the output is HIGH or LOW to activate the motirdriver.

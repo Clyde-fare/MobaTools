@@ -141,13 +141,20 @@ bool MoToStepper::_chkRunning() { // ###########################################
 }
 
 // public functions -------------------
-uint8_t MoToStepper::attach( byte stepP, byte dirP ) { //######################################
+uint8_t MoToStepper::attach( int stepP, int dirP ) { //######################################
+	// negative parameteers means the stip will be inverted ( only for STEPDIR )
     // step motor driver STEPDIR or FULLSTEP with only 2 pins is used
     byte pins[2];
     if ( stepMode != STEPDIR && stepMode != FULLSTEP ) return 0;    // wrong mode
     DB_PRINT( "Attach with 2 pins, S=%d, D=%d\n\r", stepP, dirP );
-    pins[0] = stepP;
-    pins[1] = dirP;
+    pins[0] = (byte)abs(stepP);
+    pins[1] = (byte)abs(dirP);
+	if (stepMode == STEPDIR) {
+		// check for pin-Inverting
+		 _stepperData.lastPattern = 0;
+		 if ( stepP < 0 ) _stepperData.lastPattern |= STEPINVERT;
+		 if ( dirP < 0 ) _stepperData.lastPattern |= DIRINVERT;
+	}
 	#ifndef ESP8266
 		// ESP8266 has no FULLSTEP mode
 		if ( stepMode == FULLSTEP ) return MoToStepper::attach( SINGLE_PINS2, pins );
@@ -228,8 +235,9 @@ uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
             _stepperData.pins[i] = pins[i];
             #endif
             pinMode( pins[i], OUTPUT );
-            digitalWrite( pins[i], LOW );
         }
+        digitalWrite( pins[0], _stepperData.lastPattern&STEPINVERT );
+        digitalWrite( pins[1], (_stepperData.lastPattern&DIRINVERT)>>1 );
 		_stepperData.patternIxInc = 1;  // defines direction
 		DB_PRINT("STEPRIR attached, %d, %d", pins[0], pins[1] );
         break;
@@ -585,7 +593,12 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
                 _stepperData.patternIxInc   = patternIxInc;
 				// tSetupDIR: - Set dir OUTPUT if in STEPDIR mode
 				if ( stepMode == STEPDIR ) {
-					stepperWrite( &_stepperData, 1, ( _stepperData.patternIxInc > 0 ) );
+					if ( _stepperData.lastPattern&DIRINVERT ) {
+					// inverted DIR
+						stepperWrite( &_stepperData, 1, (_stepperData.patternIxInc > 0) );
+					} else {
+						stepperWrite( &_stepperData, 1, (_stepperData.patternIxInc < 0) );
+					}
 				}
                 _stepperData.stepsInRamp    = 0;
                 _stepperData.stepCnt        = stepCnt;
@@ -604,7 +617,12 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
         _stepperData.patternIxInc = patternIxInc;
 		// tSetupDIR: - Set dir OUTPUT if in STEPDIR mode
 		if ( stepMode == STEPDIR ) {
-			stepperWrite( &_stepperData, 1, ( _stepperData.patternIxInc > 0 ) );
+			if ( _stepperData.lastPattern&DIRINVERT ) {
+			// inverted DIR
+				stepperWrite( &_stepperData, 1, (_stepperData.patternIxInc > 0) );
+			} else {
+				stepperWrite( &_stepperData, 1, (_stepperData.patternIxInc < 0) );
+			}
 		}
         _stepperData.stepCnt = stepCnt;
         if ( stepValue == 0 ) {
@@ -783,11 +801,13 @@ long MoToStepper::stepsToDo() { //##############################################
 uint8_t MoToStepper::moving() { //#################################################################################
     // return how much still to move (percentage)
     long tmp;
+	uint8_t _stepActive;
     if ( _stepperData.output == NO_OUTPUT ) return 0; // not attached
     //Serial.print( _stepperData.stepCnt ); Serial.print(" "); 
     //Serial.println( _stepperData.aCycSteps );
     _noStepIRQ(); // disable Stepper interrupt, because (long)stepcnt is changed in TCR interrupt
     tmp = _stepperData.stepCnt + _stepperData.stepCnt2;
+	_stepActive = _stepperData.stepActive;
     _stepIRQ();  // enable stepper IRQ
     if ( tmp > 0 ) {
         // +1 becase we will not NOT return 0, even if less than 1%, because 0 means real stop of the motor
@@ -797,15 +817,11 @@ uint8_t MoToStepper::moving() { //##############################################
             tmp =  (tmp  / (( abs( stepsToMove)+1) / 100 ) ) + 1;
     } else {
 		// in STEPDIR mode check if step pulse is still active ( return '0' only AFTER last pulse )
-        #ifdef FAST_PORTWRT
-        if ( _stepperData.output == STEPDIR_PINS && (*_stepperData.portPins[0].Adr & _stepperData.portPins[0].Mask) ) {
-        #else
-		if ( _stepperData.output == STEPDIR_PINS && digitalRead( _stepperData.pins[0] ) ) {
-		#endif
-		tmp=1;
-		}
+		
+        if ( _stepActive ) { SET_TP2; tmp=1; }
 	}
     if ( tmp > 255 ) tmp=255;
+	CLR_TP2;
     return tmp ;
 }
 

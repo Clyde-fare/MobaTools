@@ -1,7 +1,7 @@
 // ESP32 HW-spcific Functions
 #define debugTP
 #define debugPrint
-#include <MobaTools.h>  // Values for ...TARGET_ESP32xx are defined here
+#include <MobaTools.h>  // Values for ...TARGET_ESP32xx are defined includes called here
 #if CONFIG_IDF_TARGET_ESP32
 #pragma message "Info: compiling MoToESP32"
 
@@ -12,9 +12,9 @@ bool spiInitialized = false;
 void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
+static uint64_t lastAlarm, aktAlarm;
 
 void IRAM_ATTR ISR_Stepper(void) {
-    static uint64_t lastAlarm, aktAlarm;
     // Timer running up, used for stepper motor. No reload of timer
     SET_TP1;
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
@@ -25,11 +25,11 @@ void IRAM_ATTR ISR_Stepper(void) {
     lastAlarm = aktAlarm;
     aktAlarm = lastAlarm+(nextCycle*TICS_PER_MICROSECOND); // minimumtime until next Interrupt
     uint64_t minNextAlarm = lastAlarm + (MIN_STEP_CYCLE*TICS_PER_MICROSECOND/2);
-	if ( aktAlarm < minNextAlarm ) {
+	/*if ( aktAlarm < minNextAlarm ) {
 		// time till next ISR ist too short, set to mintime and adjust nextCycle
         CLR_TP1;
 		aktAlarm =  minNextAlarm;
-	}
+	}*/
 	#if (ESP_ARDUINO_VERSION_MAJOR == 2)
      timerAlarmWrite(stepTimer, aktAlarm , false); // no autorelaod
      timerAlarmEnable(stepTimer);
@@ -71,7 +71,9 @@ static bool timerInitialized = false;
 		#else
 		 #error "ESP-core version unsupported"
 		#endif
-		DB_PRINT("Timer eingerichtet\n\r");	
+		aktAlarm = ISR_IDLETIME*TICS_PER_MICROSECOND; // time of first alarm
+		DB_PRINT("aA=%ld, lA=%ld\n\r",aktAlarm, lastAlarm);
+		DB_PRINT("Step-Timer eingerichtet\n\r");	
         timerInitialized = true;  
         MODE_TP1;   // set debug-pins to Output
         MODE_TP2;

@@ -84,7 +84,7 @@ bool seizeTimerAS() {
     motoRPtimer->timehw = 0;
     */
     lastAlarm = timer_time_us_64(motoRPtimer);
-    aktAlarm = timer_time_us_64(motoRPtimer) + 500;//ISR_IDLETIME;
+    aktAlarm = timer_time_us_64(motoRPtimer) + ISR_IDLETIME*TICS_PER_MICROSECOND;//ISR_IDLETIME;
     timer_hardware_alarm_set_target (motoRPtimer,stepperAlarm, aktAlarm); 
     DB_PRINT("set first target for alarm"); 
     timerInitialized = true;

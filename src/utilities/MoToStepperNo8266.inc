@@ -86,7 +86,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 		
         bool resetPulse = false; // reset pulse and changing dir is never done in same IRQ
 		if ( stepperDataP->stepActive>0 ) { // stepActive is always 0 in FULL and HALFSTEP
-			stepperWrite( stepperDataP, 0, 0 );
+			stepperWrite( stepperDataP, 0, (stepperDataP->lastPattern&STEPINVERT) );
 			stepperDataP->stepActive = 0;
 			resetPulse = true;
 			// Check if direction must be changed
@@ -99,13 +99,18 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// tSetupDIR: - change DIR output here if needed
 			// if needed dir output for next stepping pulse must be changed here
 			if  ( stepperDataP->output == STEPDIR_PINS && stepperDataP->patternIx == 1 && !resetPulse ) {
-				stepperWrite( stepperDataP, 1, (stepperDataP->patternIxInc > 0) );
+				if ( stepperDataP->lastPattern&DIRINVERT ) {
+				// inverted DIR
+					stepperWrite( stepperDataP, 1, (stepperDataP->patternIxInc > 0) );
+				} else {
+					stepperWrite( stepperDataP, 1, (stepperDataP->patternIxInc < 0) );
+				}
 				stepperDataP->patternIx = 0; // reset dir-change flags
 			}
 			// Now check if a step is due
             if ( stepperDataP->aCycSteps ) stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;  // using '+=' made problems here at ESP32
 			// ->cycCnt now contains the cycles since the last step was generated.
-            #ifdef IS_32BIT 
+            #ifdef NEVERIS_32BIT  // not actually used
             if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps )  && !resetPulse ) {
                 //SET_TP2;
 				// let's see if we are a lot too late ( cycCnt is much higher than the needed aCyclSteps ?)
@@ -118,7 +123,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     stepperDataP->cycCnt = MAX_JITTER; 
                 }
                 //CLR_TP4;
-            #else // not 32bit ( never use a jitter computing )
+            #else // not 32bit ( never use a jitter computing ) 
             if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps ) ) {
                 //SET_TP2;
                 stepperDataP->cycCnt = 0 ;
@@ -189,12 +194,9 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     stepperDataP->lastPattern = stepPattern[ _patIx ];
                     break;
                   case STEPDIR_PINS : // output step-pulse and direction
-                    // direction first
-					// tSetupDIR: - don't set DIR-ouput immediately before step pulse. It must be done
-					// previously because of dir-setuptime of HW
                     // Set step pulse 
                     nextCycle = MIN_STEP_CYCLE/2; // will be resettet in half of min steptime
-					stepperWrite( stepperDataP, 0, 1 );
+					stepperWrite( stepperDataP, 0, !(stepperDataP->lastPattern&STEPINVERT) );
 					stepperDataP->stepActive = 1;
 					stepperDataP->patternIx = 0; // changed to 1 later, if a dir-change is due
                     break;

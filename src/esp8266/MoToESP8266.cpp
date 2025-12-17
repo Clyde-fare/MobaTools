@@ -2,7 +2,7 @@
 #ifdef ARDUINO_ARCH_ESP8266
 #include <MobaTools.h>
 //#define debugTP
-#define debugPrint
+//#define debugPrint
 #include <utilities/MoToDbg.h>
 
 //#warning "HW specfic - ESP8266 ---"
