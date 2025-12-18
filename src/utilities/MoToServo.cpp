@@ -98,7 +98,9 @@ void IRAM_ATTR ISR_Servo( void *arg ) {
   CLR_TP1;
 }
 
-
+#ifndef servoCmp_t
+#define servoCmp_t uint16_t  //default is a 16-Bit Timer but for ESP32Sx its 64/54 bit
+#endif
 
 #else //---------------------- Timer-interrupt for non ESP / non RP2040 -----------------------------
 static servoData_t* lastServoDataP = NULL; //start of ServoData-chain
@@ -107,13 +109,13 @@ static servoData_t* activePulseP = NULL;   // Ptr to pulse to stop
 static servoData_t* stopPulseP = NULL;     // Ptr to Pulse whose stop time is already in OCR1
 static servoData_t* nextPulseP = NULL;
 static enum { PON, POFF } IrqType = PON; // Cycle starts with 'pulse on'
-static uint16_t activePulseOff = 0;     // OCR-value of pulse end 
-static uint16_t nextPulseLength = 0;
-constexpr uint16_t servoCycleTics = 20000U * TICS_PER_MICROSECOND;
-static uint16_t		edgeTime = 0;		// Time of next edge in 20ms cycle ( in timer tics, relative to starTtime
+static servoCmp_t activePulseOff = 0;     // OCR-value of pulse end 
+static servoCmp_t nextPulseLength = 0;
+constexpr servoCmp_t servoCycleTics = 20000U * TICS_PER_MICROSECOND;
+static servoCmp_t		edgeTime = 0;		// Time of next edge in 20ms cycle ( in timer tics, relative to starTtime
 										// edgeTime is computed independent of a timer overflow
-static uint16_t	actEdgeTime;			// time of current edge (created in this interrupt)
-static uint16_t servoCycleStart = 0;	// timervalue where active 20ms cycle started
+static servoCmp_t	actEdgeTime;			// time of current edge (created in this interrupt)
+static servoCmp_t servoCycleStart = 0;	// timervalue where active 20ms cycle started
 static bool speedV08 = true;    // Compatibility-Flag for speed method
 // create overlapping servo pulses
 // Positions of servopulses within 20ms cycle are variable, max 2 pulses at the same time
@@ -190,7 +192,7 @@ void ISR_Servo( void) {
             // next starttime must behind actual timervalue and endtime of next pulse must
             // lay after endtime of runningpuls + safetymargin (it may be necessary to start
             // another pulse between these 2 ends)
-            uint16_t tmpTCNT1 = actEdgeTime + MARGINTICS;// /2; // min time between two edges ( = min time between IRQ's )
+            servoCmp_t tmpTCNT1 = actEdgeTime + MARGINTICS;// /2; // min time between two edges ( = min time between IRQ's )
             //CLR_TP3 ;
             //edgeTime = max ( (long)((long)activePulseOff + (long) MARGINTICS - (long) nextPulseLength), tmpTCNT1 );
 			if ( nextPulseLength > activePulseOff +  2*MARGINTICS ) edgeTime = tmpTCNT1;
@@ -227,7 +229,7 @@ void ISR_Servo( void) {
         // do we know the next pulse already?
         if ( nextPulseLength > 0 ) {
             // yes we know, start this pulse and then look for next one
-            uint16_t tmpTCNT1= actEdgeTime; // time of this edge
+            servoCmp_t tmpTCNT1= actEdgeTime; // time of this edge
             if ( nextPulseP->on && (nextPulseP->offcnt+nextPulseP->noAutoff) > 0 ) {
                 // its a 'real' pulse, set output pin
                 //CLR_TP1;
@@ -265,7 +267,7 @@ void ISR_Servo( void) {
                     #endif
                 }
                 //int32_t tmpTCNT1 = actEdgeTime+ MARGINTICS/2;
-                uint16_t tmpTCNT1 = actEdgeTime+ MARGINTICS;///2;
+                servoCmp_t tmpTCNT1 = actEdgeTime+ MARGINTICS;///2;
                 //SET_TP3;
                 // look for second pulse
                 //SET_TP4;

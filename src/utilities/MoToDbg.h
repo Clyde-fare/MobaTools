@@ -6,7 +6,7 @@
 //#define debugPrint
 
 // über diese undef's kann das Debugging global abgeschaltet werden
-#undef debugTP
+//#undef debugTP
 #undef debugPrint
 
 #ifdef debugTP 
@@ -141,7 +141,12 @@
         #define CLR_TP4 
          
     #elif defined ESP32 || defined __SAMD__ // using standard Arduino digitalWrite
-		#ifdef ESP32
+		#ifdef ARDUINO_NANO_ESP32
+			#define TP1 17	//A0
+			#define TP2 18	//A1
+			#define TP3 19	//10
+			#define TP4 20	//11
+		#elif defined ESP32
 			#define TP1 22	//A5
 			#define TP2 21	//A4
 			#define TP3 15	//10

@@ -1,10 +1,13 @@
 #ifndef MOTOESP32S3_H
 #define MOTOESP32S3_H
 // ESP32 specific defines for Cpp files
+#define TODO 	// ignore TODO-marker
 
-#warning ESP32S3 (Nano-ESP32) specific cpp includes
-void seizeTimerAS();
-void ISR_Servo( void *arg );
+#pragma message "ESP32S3 (Nano-ESP32) specific cpp includes"
+
+void ISR_Servo();
+void ISR_Stepper();
+
 inline __attribute__((__always_inline__)) void _noStepIRQ() {
     portENTER_CRITICAL(&stepperMux);
     #if defined COMPILING_MOTOSTEPPER_CPP
@@ -21,94 +24,125 @@ inline __attribute__((__always_inline__)) void  _stepIRQ(bool force = true) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined COMPILING_MOTOSERVO_CPP
+// Values for Servo: -------------------------------------------------------
+constexpr uint8_t INC_PER_MICROSECOND = 8;		// one speed increment is 0.125 µs
+constexpr uint8_t  COMPAT_FACT = 1; // no compatibility mode for ESP                   
+// defaults for macros that are not defined in architecture dependend includes
+constexpr uint8_t INC_PER_TIC = INC_PER_MICROSECOND / TICS_PER_MICROSECOND;
+#define time2tic(pulse)  ( (pulse) *  INC_PER_MICROSECOND )
+#define tic2time(inc)  ( ( inc ) / INC_PER_MICROSECOND )
+#define AS_Speed2Inc(speed) (speed)
+//-----------------------------------------------------------------
+/* Bei Stepper.cpp und servo.cpp wird das gleiche seizeTimerAS(); zur initiierung aufgerufen,
+   da bisher für Servos und Stepper der gleiche Timer verwendet wurde ( nur unterchiedliche CMP-Register )
+   Der ESP hat aber je Timer nur ein Alarmregister, deshalb muss für Stepper und Servos jeweils ein
+   eigener Timer genutzt ( und initiiert ) werden. Deshalb wird hier im .h File je nachdem
+   was gerade kompiliert wird ein eigener Timer-Init eingerichtet. Dies muss als 'inline' gemacht
+   werden, damit der Linker dies nicht sieht. Da der Aufruf in beiden Fällen den gleichen Namen
+   hat, könnte der Linker das nicht unterscheiden.
+   Weiteres Problem: Für Stepper und Softleds muss der gleiche Timer initiiert werden.
+*/
+static bool servoTimerInitialized = false;
 
-//returns the channelnumber ( 0...15 ) of the leds channel to be used, or -1 if no channel is availabele
-static inline __attribute__((__always_inline__)) int8_t servoPwmSetup( servoData_t *servoDataP ) {
-    //DB_PRINT("Search fre ledc channel");
-    int8_t pwmNbr = initPwmChannel( servoDataP->pin, SERVO_TIMER );
-    pinMode( servoDataP->pin, OUTPUT );
-    attachInterruptArg( servoDataP->pin, ISR_Servo, (void*)servoDataP, FALLING );
-    DB_PRINT( "PwmNbr:%d, Pin:%d, Group=%d, Channel=%d, Timer=%d", pwmNbr, pwmUse[pwmNbr].pin, pwmUse[pwmNbr].group, pwmUse[pwmNbr].channel, pwmUse[pwmNbr].timer );
-    return pwmNbr;
+static inline __attribute__((__always_inline__))void seizeTimerAS() {
+    // Initiieren des Servo Timers ------------------------
+    if ( !servoTimerInitialized ) {
+		#if (ESP_ARDUINO_VERSION_MAJOR == 2)
+			#pragma message "Info: using esp core 2.x.x"
+        servoTimer = timerBegin(SERVO_TIMER, DIVIDER, true); // true= countup
+        timerAttachInterrupt(servoTimer, &ISR_Servo, true);  // true= edge Interrupt
+        timerAlarmWrite(servoTimer, ISR_IDLETIME*TICS_PER_MICROSECOND , false); // false = no autoreload );
+        timerAlarmEnable(servoTimer);
+		#elif (ESP_ARDUINO_VERSION_MAJOR == 3)
+			#pragma message "Info: using esp core 3.x.x"
+        // core 3.0.3 hw_timer_t * timerBegin(uint32_t frequency);   // frequency in Hz    
+		servoTimer = timerBegin(2000000);  // frequency
+        // core 3.0.3void timerAttachInterrupt(hw_timer_t * timer, void (*userFunc)(void));
+        timerAttachInterrupt(servoTimer, &ISR_Servo); // assume edge - zs6buj
+        timerAlarm(servoTimer, ISR_IDLETIME*TICS_PER_MICROSECOND , false, 0); // false = no autoreload );
+		#else
+		 #error "ESP-core version unsupported"
+		#endif
+			
+        servoTimerInitialized = true;  
+        MODE_TP1;   // set debug-pins to Output
+        MODE_TP2;
+        MODE_TP3;
+        MODE_TP4;
+    }
 }
 
-static inline __attribute__((__always_inline__)) void startServoPulse( servoData_t *servoDataP, uint32_t pulseWidth ) {
-    setPwmPin( servoDataP->pwmNbr );
-    setPwmDuty( servoDataP->pwmNbr, pulseWidth );
-    attachInterruptArg( servoDataP->pin, ISR_Servo, servoDataP, FALLING );
+static inline __attribute__((__always_inline__)) void enableServoIsrAS() {
+	// Enable timer compare IRQ for servos
+	// at ESP32Sx a timer must be initialized here 
+	//( it's not only a different CMP-reg of the stepper timer )
+	TODO
 }
 
-static inline __attribute__((__always_inline__)) void servoWrite( servoData_t *servoDataP, uint32_t pulseWidth ) {
-    // the same funktion exists for ESP8266 ( with another internal call )
-    setPwmDuty( servoDataP->pwmNbr, pulseWidth );
-    
-}
+static inline __attribute__((__always_inline__)) void setServoCmpAS(servoCmp_t aktAlarm) {
+	// Set compare-Register for next servo IRQ
+	#if (ESP_ARDUINO_VERSION_MAJOR == 2)
+     timerAlarmWrite(servoTimer, aktAlarm , false); // no autorelaod
+     timerAlarmEnable(servoTimer);
+	#elif (ESP_ARDUINO_VERSION_MAJOR == 3)
+    //3.0.3 void timerAlarm(hw_timer_t * timer, uint64_t alarm_value, bool autoreload, uint64_t reload_count);
+    timerAlarm(servoTimer, aktAlarm , false, 0); // no autorelaod, 0=unlimited - zs6buj
+	#else
+		 #error "ESP-core version unsupported"
+    #endif
+}	
 
-static inline __attribute__((__always_inline__)) void servoPulseOff( servoData_t *servoDataP ) {
-    //DB_PRINT("Stop Puls, ledcNr=%d", servoDataP->pwmNbr );
-    setPwmDuty( servoDataP->pwmNbr, 0 );
-}
-
-static inline __attribute__((__always_inline__)) void servoDetach( servoData_t *servoDataP ) {
-    detachInterrupt( servoDataP->pin );
-    freePwmNbr( servoDataP->pwmNbr );
-}
 #endif
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#ifdef COMPILING_MOTOSOFTLEDESP_CPP
-//returns the channelnumber ( 0...15 ) of the leds channel to be used, or -1 if no channel is availabele
-static inline __attribute__((__always_inline__)) int8_t softLedPwmSetupAS( servoData_t *softledDataP )  {
-    int8_t pwmNbr = initPwmChannel( softledDataP->pin, LED_TIMER );
-    pinMode( softledDataP->pin, OUTPUT );
-    attachInterruptArg( softledDataP->pin, ISR_Servo, (void*)softledDataP, FALLING );
-    return pwmNbr;
+#ifdef COMPILING_MOTOSOFTLED32_CPP
+
+void seizeTimerAS();
+
+static inline __attribute__((__always_inline__)) void enableSoftLedIsrAS() {
 }
 
-static inline __attribute__((__always_inline__)) uint8_t attachSoftledAS( ledData_t *ledDataP ) {
-    int8_t pwmNbr = initPwmChannel( ledDataP->pin, LED_TIMER );
-    if ( pwmNbr >= 0 ) {
-        // freien LEDC-Slot gefunden, Pin und Interrupt einrichten
-        setPwmPin(  pwmNbr );
-        attachInterruptArg( ledDataP->pin, ISR_Softled, (void*)ledDataP, FALLING );
-    }
-    return pwmNbr;
 
-}
-
-static inline __attribute__((__always_inline__)) void startLedPulseAS( uint8_t pwmNbr, uint8_t invFlg, uint32_t pulseLen ){
-    // start or change the pwmpulses on the led pin.
-    // with invFlg set pulseLen is lowtime, else hightime
-    // compute pulselen from µs to tics
-    pulseLen = slPwm2tic(pulseLen);
-    if ( invFlg ) {
-        setPwmDuty(pwmNbr, DUTY100-pulseLen);
-    } else {
-        setPwmDuty(pwmNbr, pulseLen);
-    }
-
-}
-
-static inline __attribute__((__always_inline__)) void softLedOffAS(  uint8_t pwmNbr, uint8_t invFlg ){
-    setPwmDuty(pwmNbr, invFlg? DUTY100 : 0);
-    //digitalWrite( pin , invFlg );
-}
-
-static inline __attribute__((__always_inline__)) void softLedOnAS(  uint8_t pwmNbr, uint8_t invFlg ){
-    setPwmDuty(pwmNbr, invFlg? 0 : DUTY100);
-    //digitalWrite( pin , invFlg );
-}
-
-static inline __attribute__((__always_inline__)) void softLedOn2AS(  uint8_t pwmNbr, uint8_t invFlg ){
-    // keine Aktion beim ESP32 notwendig
-}
-
-static inline __attribute__((__always_inline__)) void attachInterruptAS(  ledData_t *ledDataP ){
-    attachInterruptArg( ledDataP->pin, ISR_Softled, (void*)ledDataP, FALLING );
-}
 
 #endif  
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined COMPILING_MOTOSTEPPER_CPP
+extern uint64_t lastAlarm, aktAlarm;
+
+void seizeTimerAS() {
+    // Initiieren des Stepper + Softled Timers ------------------------
+	static bool stepperTimerInitialized = false;
+	DB_PRINT("Servotimer initialize = %d\n\r", stepperTimerInitialized);
+    if ( !stepperTimerInitialized ) {
+		#if (ESP_ARDUINO_VERSION_MAJOR == 2)
+			#pragma message "Info: using esp core 2.x.x"
+        stepTimer = timerBegin(STEPPER_TIMER, DIVIDER, true); // true= countup
+        timerAttachInterrupt(stepTimer, &ISR_Stepper, true);  // true= edge Interrupt
+        timerAlarmWrite(stepTimer, ISR_IDLETIME*TICS_PER_MICROSECOND , false); // false = no autoreload );
+        timerAlarmEnable(stepTimer);
+		#elif (ESP_ARDUINO_VERSION_MAJOR == 3)
+			#pragma message "Info: using esp core 3.x.x"
+        // core 3.0.3 hw_timer_t * timerBegin(uint32_t frequency);   // frequency in Hz    
+		stepTimer = timerBegin(2000000);  // frequency
+        // core 3.0.3void timerAttachInterrupt(hw_timer_t * timer, void (*userFunc)(void));
+        timerAttachInterrupt(stepTimer, &ISR_Stepper); // assume edge - zs6buj
+        timerAlarm(stepTimer, ISR_IDLETIME*TICS_PER_MICROSECOND , false, 0); // false = no autoreload );
+		#else
+		 #error "ESP-core version unsupported"
+		#endif
+		aktAlarm = ISR_IDLETIME*TICS_PER_MICROSECOND; // time of first alarm
+		DB_PRINT("aA=%ld, lA=%ld\n\r",aktAlarm, lastAlarm);
+		DB_PRINT("Step-Timer eingerichtet\n\r");	
+        stepperTimerInitialized = true;  
+        MODE_TP1;   // set debug-pins to Output
+        MODE_TP2;
+        MODE_TP3;
+        MODE_TP4;
+    }
+}
+
+
+
     static inline __attribute__((__always_inline__)) void enableStepperIsrAS() {
         // dummy
     }

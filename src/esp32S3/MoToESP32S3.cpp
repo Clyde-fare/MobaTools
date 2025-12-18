@@ -1,27 +1,31 @@
 // ESP32 HW-spcific Functions
+//#define debugTP
+//#define debugPrint
 #include <MobaTools.h>
 #ifdef CONFIG_IDF_TARGET_ESP32S3
 
 #pragma message "compilingMoToESP32S3"
-//#define debugTP
-//#define debugPrint
-#include <utilities/MoToDbg.h>
 
 //#warning "HW specfic - ESP32S3 ---"
 
 bool spiInitialized = false;
 void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
+void softledISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));
 nextCycle_t nextCycle;
 static nextCycle_t cyclesLastIRQ = 1;  // cycles since last IRQ
+uint64_t lastAlarm, aktAlarm;
 
 void IRAM_ATTR ISR_Stepper(void) {
-    static uint64_t lastAlarm, aktAlarm;
     // Timer running up, used for stepper motor. No reload of timer
     SET_TP1;
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
     portENTER_CRITICAL_ISR(&stepperMux);
     cyclesLastIRQ = (aktAlarm - lastAlarm) / TICS_PER_MICROSECOND;
     if ( stepperISR ) stepperISR(cyclesLastIRQ);
+    //============  End of steppermotor ======================================
+	CLR_TP1;
+    if ( softledISR ) softledISR(cyclesLastIRQ);
+    // ======================= end of softleds =====================================
 	// next alarm ISR must be at least MIN_STEP_CYCLE/2 beyond last alarm value ( time between to ISR's )
     lastAlarm = aktAlarm;
     aktAlarm = lastAlarm+(nextCycle*TICS_PER_MICROSECOND); // minimumtime until next Interrupt
@@ -49,36 +53,10 @@ timerConfig_t timerConfig;
 portMUX_TYPE stepperMux = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE servoMux = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE softledMux = portMUX_INITIALIZER_UNLOCKED;
+// Because there is only one Alarmreg per timer, we need two distinct timer for stepper and servo
 hw_timer_t * stepTimer = NULL;
+hw_timer_t * servoTimer = NULL;
 
-void seizeTimerAS() {
-static bool timerInitialized = false;
-    // Initiieren des Stepper Timers ------------------------
-    if ( !timerInitialized ) {
-		#if (ESP_ARDUINO_VERSION_MAJOR == 2)
-			#pragma message "Info: using esp core 2.x.x"
-        stepTimer = timerBegin(STEPPER_TIMER, DIVIDER, true); // true= countup
-        timerAttachInterrupt(stepTimer, &ISR_Stepper, true);  // true= edge Interrupt
-        timerAlarmWrite(stepTimer, ISR_IDLETIME*TICS_PER_MICROSECOND , false); // false = no autoreload );
-        timerAlarmEnable(stepTimer);
-		#elif (ESP_ARDUINO_VERSION_MAJOR == 3)
-			#pragma message "Info: using esp core 3.x.x"
-        // core 3.0.3 hw_timer_t * timerBegin(uint32_t frequency);   // frequency in Hz    
-		stepTimer = timerBegin(2000000);  // frequency
-        // core 3.0.3void timerAttachInterrupt(hw_timer_t * timer, void (*userFunc)(void));
-        timerAttachInterrupt(stepTimer, &ISR_Stepper); // assume edge - zs6buj
-        timerAlarm(stepTimer, ISR_IDLETIME*TICS_PER_MICROSECOND , false, 0); // false = no autoreload );
-		#else
-		 #error "ESP-core version unsupported"
-		#endif
-			
-        timerInitialized = true;  
-        MODE_TP1;   // set debug-pins to Output
-        MODE_TP2;
-        MODE_TP3;
-        MODE_TP4;
-    }
-}
 
 
 void enableServoIsrAS() {

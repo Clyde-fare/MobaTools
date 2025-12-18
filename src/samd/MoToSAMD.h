@@ -7,6 +7,7 @@ extern uint8_t noStepISR_Cnt;   // Counter for nested StepISr-disable
 extern TcCount16 *MtcP;	// Pointer to timerstruct of used timer
 
 void seizeTimerAS();
+void ISR_Servo();
 
 static inline __attribute__((__always_inline__)) void _noStepIRQ() {
     //it is only possible to disable the whole timer IRQ ( there are no different vectors for the 2 compare )
@@ -23,7 +24,6 @@ static inline __attribute__((__always_inline__)) void  _stepIRQ(bool force = fal
     //Serial.println(noStepISR_Cnt);
 }
 
-void ISR_Servo();
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined COMPILING_MOTOSERVO_CPP

@@ -10,12 +10,21 @@ extern "C" {
 #endif
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv  ESP32S3  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 #define IS_32BIT
-#define IS_ESP  32
-#define HAS_PWM_HW
+#define IS_ESP32S
+//#define HAS_PWM_HW		// will not be used
+#define MOTOSOFTLED32    // use 32-bit version of SoftLed class
+#define servoCmp_t uint64_t	// values for 64-bit timer (default is uint16_t, because most timers are 16 bit )
 
 // ----------------   stepper related defines   ---------------------------------
 // use of SPI interface
-#ifdef USE_VSPI
+#ifdef ARDUINO_NANO_ESP32
+    #define SPI_USED    FSPI
+	#define MISO		47		// D12
+    #define MOSI        38		// D11
+    #define SCK         43		// D13
+    #define SS          21		// D10
+
+#elif defined USE_VSPI
     #define SPI_USED    VSPI
     #define MOSI        23
     #define SCK         18
@@ -51,14 +60,16 @@ extern bool timerInitialized;
 // Mutexes für Zugriff auf Daten, die in ISR verändert werden
 extern portMUX_TYPE stepperMux;
 
-#define STEPPER_TIMER     3  // Timer 1, Group 1
+#if (ESP_ARDUINO_VERSION_MAJOR == 2)
+// Only used for Core 2.X
+#define STEPPER_TIMER     3  // Timer 1, Group 1 Wird in V3 der IDF automatisch gewählt??
+#define SERVO_TIMER     2  // Timer 0, Group 1 Wird in V3 der IDF automatisch gewählt??
+#endif
 extern hw_timer_t * stepTimer;
-void seizeTimer1();
+extern hw_timer_t * servoTimer;
+void seizeTimer1();		// überflüssig?? - wird wohl nicht mehr gebraucht
 
-// --------------   defines for servo and softled ( ledc pwm hardware on ESP32 is used ) -----------------------
-//if  the following line is commented out, direct register access is used ( interrupts are not disabled during flash access )
-//#define LEDC_USE_SDK          // use SDK calls für Servo & Led Pulses ( interrupts are disbled during flash access )
-                                // !!!!!!! Die SDK-Aufrufe sind NICHT Interruptfest - die SDK-Version darf daher nicht // // !!!!!!! aktiviert werden, da die Interrupts NICHT abgeschaltet werden 
+// --------------   defines for servo and softled ( timer hardware on ESP32S is used ) -----------------------
 
 #ifdef COMPILING_MOTOSERVO_CPP
     //#warning compiling servo.cpp for ESP32
@@ -81,53 +92,6 @@ void seizeTimer1();
     #define interrupts()    portEXIT_CRITICAL(&stepperMux);
     #define noInterrupts()  portENTER_CRITICAL(&stepperMux);
 #endif
-typedef struct {
-    union {
-        struct {
-            uint32_t pin     :8;     // used pwm HW ( 0... 15
-            uint32_t inUse   :1;     // 0 
-            uint32_t group   :1;     // leds group ( 0/1 )
-            uint32_t timer   :2;     // Timer used ( 2 for servo, 3 for softled, 0/1 unused by MobaTools
-            uint32_t channel :3;     // ledc  channel ( 0..7 )
-            uint32_t reserved:18;
-        };
-        uint32_t value;
-    };
-} pwmUse_t;
-extern pwmUse_t pwmUse[16];
-
-
-#define SERVO_TIMER         2
-#define LED_TIMER           3
-
-int8_t initPwmChannel( uint8_t pin, uint8_t timer );
-void IRAM_ATTR setPwmDuty(int8_t pwmNbr, uint32_t duty );
-void setPwmPin( uint8_t pwmNbr ) ;
-int8_t freePwmNbr( uint8_t pwmNbr );
-
-// On ESP32 timer tics and inc are the same. 
-#define INC_PER_TIC  1
-#define COMPAT_FACT  1 // no compatibility mode for ESP32                
-
-#define SERVO_FREQ  50          // 20ms period
-#define SOFTLED_FREQ    100
-#define LEDC_BITS  18          // bitresolution for duty cycle of servos and softleds
-								// one timertic is 0.07629 µs for servos
-#define INC_PER_MICROSECOND 13 // ~ 1/0.07629 µs
-#define SERVO_CYCLE ( 1000000L / SERVO_FREQ ) // Servo cycle in uS
-#define SOFTLED_CYCLE ( 1000000L / SOFTLED_FREQ ) // softled cycle in uS
-#define DUTY100     ( 1<<(LEDC_BITS) )
-// compute pulsewidth ( in usec ) to duty ) for Servos
-#define time2tic(pulse) ( ( (pulse) *  DUTY100) / SERVO_CYCLE )  
-// compute duty to pulsewidth ( in uS )
-#define tic2time(duty)  ( ( (duty) * SERVO_CYCLE) / DUTY100 +1 )
-#define AS_Speed2Inc(speed)  (speed*1280/763)  // tic == Inc == 0.07629 µs
-
-// compute pulsewidth ( in usec ) to duty ) for Softleds
-// all softled pwmValues are in µs
-#define slPwm2tic(pulse) ( ( (pulse) *  DUTY100) / SOFTLED_CYCLE )  
-// compute duty to pulsewidth ( in uS )
-#define tic2slPwm(duty)  ( ( (duty) * SOFTLED_CYCLE) / DUTY100 )
 
 extern portMUX_TYPE softledMux;
 extern portMUX_TYPE servoMux;

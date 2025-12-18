@@ -6,7 +6,8 @@
   Functions for the softled part of MobaTools
 */
 
-#if defined ARDUINO_ARCH_ESP32 || defined ARDUINO_ARCH_ESP8266
+#if defined CONFIG_IDF_TARGET_ESP32 || defined ARDUINO_ARCH_ESP8266
+// only ESP32 and ESP8266  -  ESP32Sx or Cx use the standard Softled for 32Bit processors
 #define COMPILING_MOTOSOFTLEDESP_CPP
 
 //#define debugTP

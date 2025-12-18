@@ -50,8 +50,8 @@ typedef struct ledData_t {          // global led values ( used in IRQ )
       uint8_t   actPulse;               // PWM pulse is HIGH
   #endif
   #ifdef IS_32BIT
-      uint16_t aPwm;                    // actual PWM value ( µs )
-      uint16_t tPwmOn;                // target PWM value (µs )
+      nextCycle_t aPwm;                 // actual PWM value ( µs )
+      uint16_t tPwmOn;                	// target PWM value (µs )
       uint16_t tPwmOff;                 // target PWM value (µs )
       uint16_t stepI;                   // actual step during rising/falling   
       uint16_t stepMax;                 // max nbr of steps between ON/OFF  ( determines rising/falling time )
