@@ -64,10 +64,10 @@ void ISR_Stepper() {
 	uint16_t minDiff = (gptRegP->GTCNT+MIN_TIC_DIFF) - gptRegP->GTCCR[0];
 	if (  minDiff >= add2Ocr ) {
 		// counter is already too far
-        CLR_TP1;
+        SET_TP2;
 		add2Ocr = minDiff;
 		nextCycle = add2Ocr / TICS_PER_MICROSECOND;
-        SET_TP1;
+        CLR_TP2;
 	}
     gptRegP->GTCCR[0] =  gptRegP->GTCCR[0] + add2Ocr ;
     cyclesLastIRQ = nextCycle;

@@ -69,7 +69,7 @@ bool IRAM_ATTR setStepperPins( stepperData_t *stepperDataP, uint8_t stepPattern 
 
 #pragma GCC optimize "O3"   // optimize ISR for speed
 void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
-    //SET_TP2;
+    SET_TP2;
     static const int DRAM_ATTR stepPattern[8] = {0b0011, 0b0010, 0b0110, 0b0100, 0b1100, 0b1000, 0b1001,0b0001 };
     stepperData_t *stepperDataP;         // actual stepper data in IRQ
 	stepperSyncData_t *locSyncDataP;	 // Data for synchronous move ( =NULL if no sync move active )
@@ -114,13 +114,15 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// A step is created even if we are MAX_JITTER too early
             if ( stepperDataP->cycCnt + MAX_JITTER >= ( stepperDataP->aCycSteps )  /*&& !resetPulse*/ ) {
                 //SET_TP4;
-				// to correct this 'too early' step, the next step is delayed accordingly
-				if ( stepperDataP->cycCnt < ( stepperDataP->aCycSteps ) ) {
-					// it is a too early step
-					stepperDataP->cycCnt = stepperDataP->aCycSteps - stepperDataP->cycCnt ;
-				} else {
-					stepperDataP->cycCnt = 0 ;
+				// next step can be be shorter or longer then computed, but only within MAX_JITTER
+				// to compensate creating of this step too late or too early
+				stepperDataP->cycCnt =  stepperDataP->cycCnt - stepperDataP->aCycSteps ;
+				if ( stepperDataP->cycCnt > MAX_JITTER ) {
+					SET_TP4;
+					stepperDataP->cycCnt = MAX_JITTER;
+					CLR_TP4;
 				}
+				
                 //CLR_TP4;
             #else // not 32bit ( never use a jitter computing ) 
             if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps ) ) {
@@ -431,7 +433,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 //SET_TP2; 
             }
             #endif
-            nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps+MAX_JITTER-stepperDataP->cycCnt );
+            nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps-stepperDataP->cycCnt );
             //CLR_TP2;
         } // end of 'if stepper active AND moving'
 		
@@ -488,7 +490,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
         startSpiWriteAS( spiStepperData );
         //CLR_TP4;
     }
-    //CLR_TP2;
+    CLR_TP2;
 } // ==================== End of stepper ISR ======================================
 #pragma GCC optimize "Os"
 

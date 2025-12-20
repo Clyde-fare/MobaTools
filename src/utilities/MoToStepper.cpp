@@ -668,8 +668,8 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 			}
         }
         _stepIRQ();
-		DB_PRINT("DoStepsNoRamp, absPos=%d, lastSFZ=%ld, patternIxInc=%d, stepCnt=%ld", (int)absPos, lastSFZ, (int)_stepperData.patternIxInc,stepCnt);
-        //DB_PRINT( "NoRamp:, sCnt=%ld, sCnt2=%ld, sMove=%ld, aCyc=%d", _stepperData.stepCnt, _stepperData.stepCnt2, stepsToMove, _stepperData.aCycSteps );
+		//DB_PRINT("DoStepsNoRamp, absPos=%d, lastSFZ=%ld, patternIxInc=%d, stepCnt=%ld", (int)absPos, lastSFZ, (int)_stepperData.patternIxInc,stepCnt);
+        DB_PRINT( "NoRamp:, sCnt=%ld, sCnt2=%ld, sMove=%ld, aCyc=%d", _stepperData.stepCnt, _stepperData.stepCnt2, stepsToMove, _stepperData.aCycSteps );
 
     }
     
@@ -818,10 +818,13 @@ uint8_t MoToStepper::moving() { //##############################################
     } else {
 		// in STEPDIR mode check if step pulse is still active ( return '0' only AFTER last pulse )
 		
-        if ( _stepActive ) { SET_TP2; tmp=1; }
+        if ( _stepActive ) {
+			//SET_TP2; 
+			tmp=1; 
+		}
 	}
     if ( tmp > 255 ) tmp=255;
-	CLR_TP2;
+	//CLR_TP2;
     return tmp ;
 }
 
