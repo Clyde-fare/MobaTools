@@ -156,10 +156,11 @@
 	#define MIN_STEP_CYCLE  25   // Minimum number of µsec  per step 
 
 #elif defined ARDUINO_ARCH_ESP32 ///////////////////////////////////////////////////////
-	#if CONFIG_IDF_TARGET_ESP32S2 /*|| CONFIG_IDF_TARGET_ESP32S3*/ || CONFIG_IDF_TARGET_ESP32C3
+	#if CONFIG_IDF_TARGET_ESP32S2  || CONFIG_IDF_TARGET_ESP32C3
 		#error This ESP32 version is not supported
 	#else
-		#define USE_VSPI                // default is HSPI ( for SPI-Stepper )
+		//#define USE_VSPI              // default is HSPI ( for SPI-Stepper )
+										// Nano ESP32 it is always FSPI
 		#define MIN_STEP_CYCLE 20       // Minimum number of µsec  per Step
 	#endif
 #elif defined ARDUINO_ARCH_AVR ////////////////////////////////////////////////////////
@@ -193,7 +194,7 @@
 		#define MoToSS 10		// standard for other boards
 	#endif
 #elif defined ARDUINO_ARCH_RENESAS_UNO ////////////////////////////////////////////////////////
-	#define MIN_STEP_CYCLE  80       // Minimum number of µsec  per Step
+	#define MIN_STEP_CYCLE  50       // Minimum number of µsec  per Step
 	#define IRQ_PRIO 12				// NVIC priority. Servo irq is always one prio higher.
 									// Lower priority ( higher value) will lead to problems on R4 WiFi 
 									// with WiFi active

@@ -98,11 +98,11 @@ void IRAM_ATTR ISR_Servo( void *arg ) {
   CLR_TP1;
 }
 
+#else //------------------ Timer-interrupt when PWM HW is not existent or not used -----------------------------
 #ifndef servoCmp_t
 #define servoCmp_t uint16_t  //default is a 16-Bit Timer but for ESP32Sx its 64/54 bit
+#pragma message "servoCmp_t as default ( uint16_t)"
 #endif
-
-#else //---------------------- Timer-interrupt for non ESP / non RP2040 -----------------------------
 static servoData_t* lastServoDataP = NULL; //start of ServoData-chain
 static servoData_t* pulseP = NULL;         // pulse Ptr in IRQ
 static servoData_t* activePulseP = NULL;   // Ptr to pulse to stop

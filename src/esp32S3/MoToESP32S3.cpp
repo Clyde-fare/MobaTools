@@ -1,5 +1,5 @@
 // ESP32 HW-spcific Functions
-//#define debugTP
+#define debugTP
 //#define debugPrint
 #include <MobaTools.h>
 #ifdef CONFIG_IDF_TARGET_ESP32S3
@@ -26,6 +26,7 @@ void IRAM_ATTR ISR_Stepper(void) {
 	CLR_TP1;
     if ( softledISR ) softledISR(cyclesLastIRQ);
     // ======================= end of softleds =====================================
+	SET_TP1;
 	// next alarm ISR must be at least MIN_STEP_CYCLE/2 beyond last alarm value ( time between to ISR's )
     lastAlarm = aktAlarm;
     aktAlarm = lastAlarm+(nextCycle*TICS_PER_MICROSECOND); // minimumtime until next Interrupt
@@ -44,18 +45,51 @@ void IRAM_ATTR ISR_Stepper(void) {
 	#else
 		 #error "ESP-core version unsupported"
     #endif
-    SET_TP1;
+    SET_TP2;
     portEXIT_CRITICAL_ISR(&stepperMux);
+	CLR_TP2;
     CLR_TP1; // Oszimessung Dauer der ISR-Routine
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
-timerConfig_t timerConfig;
+//timerConfig_t timerConfig;
 portMUX_TYPE stepperMux = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE servoMux = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE softledMux = portMUX_INITIALIZER_UNLOCKED;
 // Because there is only one Alarmreg per timer, we need two distinct timer for stepper and servo
 hw_timer_t * stepTimer = NULL;
-hw_timer_t * servoTimer = NULL;
+hw_timer_t * servoTimer = NULL; // The servoTimer is initialized _inline_ in MoToESP32S3.h
+
+void seizeTimerAS() {
+    // Initiieren des Stepper + Softled Timers ------------------------
+	static bool stepperTimerInitialized = false;
+	DB_PRINT("Servotimer initialize = %d\n\r", stepperTimerInitialized);
+    if ( !stepperTimerInitialized ) {
+		#if (ESP_ARDUINO_VERSION_MAJOR == 2)
+			#pragma message "Info: using esp core 2.x.x"
+        stepTimer = timerBegin(STEPPER_TIMER, DIVIDER, true); // true= countup
+        timerAttachInterrupt(stepTimer, &ISR_Stepper, true);  // true= edge Interrupt
+        timerAlarmWrite(stepTimer, ISR_IDLETIME*TICS_PER_MICROSECOND , false); // false = no autoreload );
+        timerAlarmEnable(stepTimer);
+		#elif (ESP_ARDUINO_VERSION_MAJOR == 3)
+			#pragma message "Info: using esp core 3.x.x"
+        // core 3.0.3 hw_timer_t * timerBegin(uint32_t frequency);   // frequency in Hz    
+		stepTimer = timerBegin(2000000);  // frequency
+        // core 3.0.3void timerAttachInterrupt(hw_timer_t * timer, void (*userFunc)(void));
+        timerAttachInterrupt(stepTimer, &ISR_Stepper); // assume edge - zs6buj
+        timerAlarm(stepTimer, ISR_IDLETIME*TICS_PER_MICROSECOND , false, 0); // false = no autoreload );
+		#else
+		 #error "ESP-core version unsupported"
+		#endif
+		aktAlarm = ISR_IDLETIME*TICS_PER_MICROSECOND; // time of first alarm
+		DB_PRINT("aA=%ld, lA=%ld\n\r",aktAlarm, lastAlarm);
+		DB_PRINT("Step-Timer eingerichtet\n\r");	
+        stepperTimerInitialized = true;  
+        MODE_TP1;   // set debug-pins to Output
+        MODE_TP2;
+        MODE_TP3;
+        MODE_TP4;
+    }
+}
 
 
 

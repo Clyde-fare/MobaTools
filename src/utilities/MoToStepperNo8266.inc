@@ -110,18 +110,17 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// Now check if a step is due
             if ( stepperDataP->aCycSteps ) stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;  // using '+=' made problems here at ESP32
 			// ->cycCnt now contains the cycles since the last step was generated.
-            #ifdef NEVERIS_32BIT  // not actually used
-            if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps )  && !resetPulse ) {
-                //SET_TP2;
-				// let's see if we are a lot too late ( cycCnt is much higher than the needed aCyclSteps ?)
-				// if yes we will time the next step a little bit earlier by setting cycCnt to positive value insted of 0
-                stepperDataP->cycCnt = stepperDataP->cycCnt - stepperDataP->aCycSteps ;
-                // 'Aufholen' zu langsamer Interrupts begrenzen
-                // cycCnt darf nie größer als MAX_JITTER ( maximale Aufhorate )!
-                if ( stepperDataP->cycCnt >= MAX_JITTER ) { 
-                    //SET_TP4; 
-                    stepperDataP->cycCnt = MAX_JITTER; 
-                }
+            #ifdef USE_JITTER  // not actually used
+			// A step is created even if we are MAX_JITTER too early
+            if ( stepperDataP->cycCnt + MAX_JITTER >= ( stepperDataP->aCycSteps )  /*&& !resetPulse*/ ) {
+                //SET_TP4;
+				// to correct this 'too early' step, the next step is delayed accordingly
+				if ( stepperDataP->cycCnt < ( stepperDataP->aCycSteps ) ) {
+					// it is a too early step
+					stepperDataP->cycCnt = stepperDataP->aCycSteps - stepperDataP->cycCnt ;
+				} else {
+					stepperDataP->cycCnt = 0 ;
+				}
                 //CLR_TP4;
             #else // not 32bit ( never use a jitter computing ) 
             if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps ) ) {

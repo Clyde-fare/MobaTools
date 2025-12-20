@@ -18,11 +18,11 @@ extern "C" {
 // ----------------   stepper related defines   ---------------------------------
 // use of SPI interface
 #ifdef ARDUINO_NANO_ESP32
-    #define SPI_USED    FSPI
-	#define MISO		47		// D12
-    #define MOSI        38		// D11
-    #define SCK         43		// D13
-    #define SS          21		// D10
+    #define SPI_USED    FSPI	// Arduino Nano uses Arduino pin numbers by default
+	#define MISO		12 		//GPIO47	
+    #define MOSI        11 		//GPIO38	
+    #define SCK         13 		//GPIO48	
+    #define SS          10 		//GPIO21	
 
 #elif defined USE_VSPI
     #define SPI_USED    VSPI
@@ -30,7 +30,7 @@ extern "C" {
     #define SCK         18
     #define SS          5
 #else
-    // HSPI is used by default
+    // HSPI is used by default exept for Nano ESP32
     #define SPI_USED    HSPI
     #define MOSI        13
     #define SCK         14

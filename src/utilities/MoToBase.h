@@ -41,7 +41,7 @@
 #endif
 
 
-#ifndef IS_ESP
+#if !defined IS_ESP && !defined IS_ESP32S
     #define  IRAM_ATTR  // Attribut IRAM_ATTR entfernen wenn nicht definiert
 #else
 	#ifdef IRAM_ATTR  //IRAM_ATTR
