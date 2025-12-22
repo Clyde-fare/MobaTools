@@ -74,6 +74,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     stepperData_t *stepperDataP;         // actual stepper data in IRQ
 	stepperSyncData_t *locSyncDataP;	 // Data for synchronous move ( =NULL if no sync move active )
     uint8_t spiChanged, changedPins, bitNr;
+	uint8_t stepSet;	// >0 if a step pin was set ( only used with STEP_RESET
     //SET_TP1;SET_TP4; // Oszimessung Dauer der ISR-Routine
     spiChanged = false;
     #ifdef __AVR_MEGA__
@@ -83,8 +84,9 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     // ---------------Stepper motors ---------------------------------------------
     while ( stepperDataP != NULL ) {
 		locSyncDataP = stepperDataP->syncDataP;	// Pointer to sync move data of this stepper ( =NULL if no sync move active)
-		
         bool resetPulse = false; // reset pulse and changing dir is never done in same IRQ
+	
+	#if FAST_STEPRESET == 0 // Steppin is not reset in same IRO as set	
 		if ( stepperDataP->stepActive>0 ) { // stepActive is always 0 in FULL and HALFSTEP
 			stepperWrite( stepperDataP, 0, (stepperDataP->lastPattern&STEPINVERT) );
 			stepperDataP->stepActive = 0;
@@ -94,6 +96,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 nextCycle = MIN_STEP_CYCLE/2; // will be changed in half of min steptime
 			}	
 		}
+	#endif
         if ( stepperDataP->rampState >= rampStat::CRUISING &&  stepperDataP->speedZero != ZEROSPEEDACTIVE ) {
             // only active motors with speed > 0
 			// tSetupDIR: - change DIR output here if needed
@@ -196,7 +199,11 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     break;
                   case STEPDIR_PINS : // output step-pulse and direction
                     // Set step pulse 
-                    nextCycle = MIN_STEP_CYCLE/2; // will be resettet in half of min steptime
+					#if FAST_STEPRESET == 0 // Steppin is not reset in same IRO as set	
+						nextCycle = MIN_STEP_CYCLE/2; // will be resettet in half of min steptime
+					#else
+						stepSet = 1;
+					#endif
 					stepperWrite( stepperDataP, 0, !(stepperDataP->lastPattern&STEPINVERT) );
 					stepperDataP->stepActive = 1;
 					stepperDataP->patternIx = 0; // changed to 1 later, if a dir-change is due
@@ -218,7 +225,14 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     if (stepperDataP->stepCnt2 > 0 ) { // check if we have to start a movement backwards
                         // yes, change Direction and go stpCnt2 Steps
                         stepperDataP->patternIxInc = -stepperDataP->patternIxInc;
-						if (stepperDataP->output == STEPDIR_PINS) stepperDataP->patternIx = 1;  // flag for dir change
+						SET_TP3;
+						if (stepperDataP->output == STEPDIR_PINS) {
+							stepperDataP->patternIx = 1;  // flag for dir change
+							#if FAST_STEPRESET != 0 // Steppin is reset in same IRO as set	
+							nextCycle = MIN_STEP_CYCLE/2; // dir will be switched in half of min steptime
+							#endif
+								}
+						CLR_TP3;
                         stepperDataP->stepCnt = stepperDataP->stepCnt2;
                         stepperDataP->stepCnt2 = 0;
                         stepperDataP->rampState = rampStat::RAMPACCEL;
@@ -490,6 +504,25 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
         startSpiWriteAS( spiStepperData );
         //CLR_TP4;
     }
+	
+	#if FAST_STEPRESET != 0 // Steppin is reset in same IRO as set	
+	if ( stepSet != 0 ) {
+		stepperDataP = stepperRootP;
+		while ( stepperDataP != NULL ) {
+
+			if ( stepperDataP->stepActive>0 ) { // stepActive is always 0 in FULL and HALFSTEP
+				stepperWrite( stepperDataP, 0, (stepperDataP->lastPattern&STEPINVERT) );
+				stepperDataP->stepActive = 0;
+				// Check if direction must be changed
+				/*if ( stepperDataP->patternIx == 1 ) {  // flag for dir change
+					nextCycle = MIN_STEP_CYCLE/2; // will be changed in half of min steptime
+				}*/	
+			}
+			stepperDataP = stepperDataP->nextStepperDataP;
+		}
+	}
+	#endif
+
     CLR_TP2;
 } // ==================== End of stepper ISR ======================================
 #pragma GCC optimize "Os"

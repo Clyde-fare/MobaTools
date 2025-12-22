@@ -18,6 +18,8 @@
 
 #define GET_COUNT (uint32_t)gptRegP->GTCNT
 
+#define FAST_STEPRESET
+
 
 extern bool timerInitialized;
 void seizeTimer1();

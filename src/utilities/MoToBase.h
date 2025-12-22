@@ -64,6 +64,9 @@
 	#define MIN_TIC_DIFF TICS_PER_MICROSECOND * 10 // minimal time between 2 interrupts ( in tics )
 	#define USE_JITTER
 	#define MAX_JITTER MIN_STEP_CYCLE/4
+	#ifndef FAST_STEPRESET
+	#define FAST_STEPRESET	0	// fast MCU's by default reset the step impulse in the following IRQ
+	#endif
 
 #else
 	#define uintxx_t	uint16_t
@@ -71,6 +74,9 @@
 	#define uintx8_t uint8_t
 	#define intx8_t	int8_t
     #define nextCycle_t uint8_t	// in CYCLETIME units
+	#ifndef FAST_STEPRESET
+	#define FAST_STEPRESET	1	// slow MCU's always reset the step impulse in same ISR as they set it
+	#endif
     //extern uint8_t nextCycle;
 #endif
 extern nextCycle_t nextCycle;   // to be used in ISR for stepper and softled

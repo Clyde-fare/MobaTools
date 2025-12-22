@@ -18,6 +18,9 @@
 #error "This AVR Processor is not supported"
 #endif
 
+#define FAST_STEPRESET
+
+
 // define timer to use
 #if defined ( TCNT3 ) && !defined ( NO_TIMER3 )
     // Timer 3 is available, use it
