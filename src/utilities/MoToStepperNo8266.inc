@@ -506,7 +506,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     }
 	
 	#if FAST_STEPRESET != 0 // Steppin is reset in same IRO as set	
-	if ( stepSet != 0 ) {
+	if ( stepSet != 0 ) { // at least one step pin has been set
 		stepperDataP = stepperRootP;
 		while ( stepperDataP != NULL ) {
 

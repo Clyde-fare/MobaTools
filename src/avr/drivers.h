@@ -12,14 +12,11 @@
 #define TICS_PER_MICROSECOND (clockCyclesPerMicrosecond() / 8 ) // prescaler is 8 = 0.5us
 
 // check supported AVR Processors
-//#if !defined __AVR_MEGA__ && !defined ARDUINO_AVR_ATTINYX4 && !defined ARDUINO_AVR_ATTINYX8
 // we need a 16-Bit timer (TCNT1 or TCNT3) and an SPI or USI HW
 #if !( ( defined TCNT1H || defined TCNT3H ) && ( defined SPCR || defined USICR ) )
 #error "This AVR Processor is not supported"
 #endif
-
-#define FAST_STEPRESET
-
+// To support 328PB the MiniCore ( https://github.com/MCUdude/MiniCore ) is needed
 
 // define timer to use
 #if defined ( TCNT3 ) && !defined ( NO_TIMER3 )
