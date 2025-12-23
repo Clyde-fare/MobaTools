@@ -22,6 +22,7 @@ MoToPwm	KEYWORD1
 
 #Methods for Class MoToServo
 attach	KEYWORD2
+attached	KEYWORD2
 detach	KEYWORD2
 write	KEYWORD2
 read	KEYWORD2
@@ -30,7 +31,6 @@ read	KEYWORD2
 setSpeed	KEYWORD2
 setSpeedTime	KEYWORD2
 moving	KEYWORD2
-stepsToDo	KEYWORD2
 setMinimumPulse	KEYWORD2
 setMaximumPulse	KEYWORD2
 
@@ -83,6 +83,7 @@ setSpeed	KEYWORD2
 setSpeedSteps	KEYWORD2
 setRampLen	KEYWORD2
 doSteps	KEYWORD2
+stepsToDo	KEYWORD2
 rotate	KEYWORD2
 stop	KEYWORD2
 moving	KEYWORD2
@@ -101,8 +102,9 @@ currentPosition	KEYWORD2
 addStepper	KEYWORD2
 setMaxSpeedSteps	KEYWORD2
 moveTo	KEYWORD2
-setTargets	KEYWORD2
-startSyncMove	KEYWORD2
+move	KEYWORD2
+syncMoveActive	KEYWORD2
+stop	KEYWORD2
 moving	KEYWORD2
 
 #Methods for Class MoToButtons

@@ -13,26 +13,30 @@ This library contains functionality
 Released versions can be installed by means of the library manager in arduino IDE
 
 #### supported processors
-- AVR - ATmega328P ATmega2560, ATmega4809
+- AVR - ATmega328P(B) ATmega2560, ATmega4809
 - AVR ATtiny, if it has the 16-bit timer 1 and a SPI or USI hardware
 - Renesas RA4M1 ( UNO R4 )
 - SamD21 (MKR-Series, Nano 33 Iot ...)
 - RP2040 / RP2350 processors ( the [core of Earle Philhower](https://github.com/earlephilhower/arduino-pico) must be used )
 - STM32F103x processors ( the [core of Roger Clark](https://github.com/rogerclarkmelbourne/Arduino_STM32) must be used )
 - ESP32 ( core versions 2.x and 3.x )
-- ESP8266 ( with some restrictions, Stepper via SPI does not work )
+- ESP32S3 ( Arduino Nano ESP32 )
+- ESP8266 ( with some restrictions )
 
-A documentation file in [german](MobaTools-270-de.pdf) and [english](MobaTools-270-en.pdf) is provided.
+A documentation file in [german](MobaTools-300-de.pdf) and [english](MobaTools-300-en.pdf) is provided.
 
 **Latest changes:**
 
 | Version |  Release Date  | Description
 | ------- |  ------------  | -----------
-| 3.0.0 | 2025-xx-xx| 
+| 3.0.0 | 2026-xx-xx| 
 | | | old classnames from V1.x are no longer valid
 | | | Support of SamD21 MCU (MKR-Series, Nano 33 Iot ...)
+| | | Support of Arduino Nano ESP32 (ESP32S3)
 | | | Synced stepper move with acceleration and deceleration
-| | | some bugfixes and minor enhancements
+| | | MoTostepper: step/dir pins can be inverted
+| | | MoTostepper: in FULLSTEP 2-pin output is possible
+| | | some bugfixes and internal enhancements
 | 2.7.0 | 2025-03-05| several bugfixes, some docu enhancements
 | | | Support of RP2040 / RP2350
 | | | Synchronos move of steppers ( without acceleration, experimental )
