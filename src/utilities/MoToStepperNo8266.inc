@@ -113,7 +113,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// Now check if a step is due
             if ( stepperDataP->aCycSteps ) stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;  // using '+=' made problems here at ESP32
 			// ->cycCnt now contains the cycles since the last step was generated.
-            #ifdef USE_JITTER  // not actually used
+            #ifdef USE_JITTER  // only on 32-Bit MCU's
 			// A step is created even if we are MAX_JITTER too early
             if ( stepperDataP->cycCnt + MAX_JITTER >= ( stepperDataP->aCycSteps )  /*&& !resetPulse*/ ) {
                 //SET_TP4;

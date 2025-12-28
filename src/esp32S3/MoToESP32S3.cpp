@@ -2,7 +2,7 @@
 #define debugTP
 //#define debugPrint
 #include <MobaTools.h>
-#ifdef CONFIG_IDF_TARGET_ESP32S3
+#ifdef IS_ESP32S
 
 #pragma message "compilingMoToESP32S3"
 

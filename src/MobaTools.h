@@ -158,13 +158,13 @@
 	#define MIN_STEP_CYCLE  25   // Minimum number of µsec  per step 
 
 #elif defined ARDUINO_ARCH_ESP32 ///////////////////////////////////////////////////////
-	#if CONFIG_IDF_TARGET_ESP32S2  || CONFIG_IDF_TARGET_ESP32C3
+	/*#if CONFIG_IDF_TARGET_ESP32S2  || CONFIG_IDF_TARGET_ESP32C3
 		#error This ESP32 version is not supported
-	#else
+	#else*/
 		//#define USE_VSPI              // default is HSPI ( for SPI-Stepper )
-										// Nano ESP32 it is always FSPI
+										// on Nano ESP32 it is always FSPI
 		#define MIN_STEP_CYCLE 20       // Minimum number of µsec  per Step
-	#endif
+	//#endif
 #elif defined ARDUINO_ARCH_AVR ////////////////////////////////////////////////////////
 	#ifdef  ARDUINO_AVR_LARDU_328E
 		// Timer3 of LGT8Fx is incompatible with MobaTools

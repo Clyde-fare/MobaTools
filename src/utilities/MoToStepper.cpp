@@ -16,7 +16,7 @@
      const char *rsC[] = { "INACTIVE", "STOPPED", "SPEED0", "STOPPING", "STARTING", "CRUISING", "LASTSTEP", "RAMPACCEL", "RAMPDECEL", "SPEEDDECEL", "SYNCSLAVE" };    
 #endif
 #ifndef MAX_JITTER
-#define MAX_JITTER 0	// default ( behaves as in V2.6  )
+#define MAX_JITTER 0	// default for 8-Bit MCU's
 #endif
 
 

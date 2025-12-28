@@ -6,7 +6,7 @@
 //#define debugPrint
 
 // über diese undef's kann das Debugging global abgeschaltet werden
-#undef debugTP
+//#undef debugTP
 #undef debugPrint
 
 #ifdef debugTP 
@@ -194,8 +194,8 @@
 	
     #elif defined ARDUINO_ARCH_RP2040
 		#warning "RP2040 TP aktiv"
-        #define TP1 20
-        #define TP2 21
+        #define TP1 A0//20
+        #define TP2 A1//21
         #define TP3 22
         #define TP4 28
         #define MODE_TP1 pinMode( TP1,OUTPUT ) 
