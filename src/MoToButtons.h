@@ -44,7 +44,7 @@
   
     Reading events:
       bool shortPress( uint8_t buttonNbr );  // true if button was pressed short ( set when button is released, reset after call )  
-      bool longPress( uint8_t buttonNbr );   // true if button was pressed long ( set when button is released, reset after call )  
+      bool longPress( uint8_t buttonNbr );   // true if button was pressed long ( set when long press time is over, reset after call )  
       bool pressed( uint8_t buttonNbr );     // true if button is pressed ( reset after call )
       byte released( uint8_t buttonNbr );    // returns pressed time im debounce tics if button is released, 0 otherwise ( reset after call )
       uint8_t clicked( uint8_t buttonNbr );  // = NOCLICK, SINGLECLICK or DOUBLECLICK ( reset to NOCLICK after call )

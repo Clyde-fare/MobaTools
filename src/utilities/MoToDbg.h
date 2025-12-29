@@ -6,7 +6,7 @@
 //#define debugPrint
 
 // über diese undef's kann das Debugging global abgeschaltet werden
-//#undef debugTP
+#undef debugTP
 #undef debugPrint
 
 #ifdef debugTP 
