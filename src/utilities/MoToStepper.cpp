@@ -142,7 +142,7 @@ bool MoToStepper::_chkRunning() { // ###########################################
 
 // public functions -------------------
 uint8_t MoToStepper::attach( int stepP, int dirP ) { //######################################
-	// negative parameteers means the stip will be inverted ( only for STEPDIR )
+	// negative parameteers means the pin will be inverted ( only for STEPDIR )
     // step motor driver STEPDIR or FULLSTEP with only 2 pins is used
     byte pins[2];
     if ( stepMode != STEPDIR && stepMode != FULLSTEP ) return 0;    // wrong mode
@@ -171,12 +171,28 @@ uint8_t MoToStepper::attach( byte pin1, byte pin2, byte pin3, byte pin4 ) {
     pins[3] = pin4;
     return MoToStepper::attach( SINGLE_PINS4, pins );
 }
-uint8_t MoToStepper::attach(byte outArg) {
+
+#ifdef ARDUINO_ARCH_ESP32
+uint8_t MoToStepper::attach( outArg_t outArg, byte ccPin, byte clkPin, byte MosiPin ) {
+	// SPI-attach with pin-definitions ( only for ESP32 )
+	if ( outArg < SPI_1 ) return 0; // wrong mode
+    byte pins[4];
+    pins[0] = ccPin;
+    pins[1] = clkPin;
+    pins[2] = MosiPin;
+    pins[3] = 0;
+    return MoToStepper::attach( outArg, pins );
+}
+#endif
+
+uint8_t MoToStepper::attach(outArg_t outArg) {
+	// SPI-attach without pin-definitions
+	if ( outArg < SPI_1 ) return 0; // wrong mode
     return MoToStepper::attach( outArg, (byte *)NULL );
 }
 #endif
     
-uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
+uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
     MODE_TP1;       // activate debug-pins
     MODE_TP2;
     MODE_TP3;
@@ -204,7 +220,12 @@ uint8_t MoToStepper::attach( byte outArg, byte pins[] ) {
             // incompatible!
             attachOK = false;
         } else {
-            initSpiAS();
+			if ( pins != NULL ) {
+				// with definition of SPI-Pins ( only ESP32 )
+				initSpiAS(pins[0],pins[1],pins[2]); // CC, CLK, MOSI
+			} else {
+				initSpiAS();
+			}
             MoToStepper::outputsUsed.outputs |= (1<<(outArg-SPI_1));
         }
         break;

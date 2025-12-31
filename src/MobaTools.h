@@ -158,9 +158,6 @@
 	#define MIN_STEP_CYCLE  25   // Minimum number of µsec  per step 
 
 #elif defined ARDUINO_ARCH_ESP32 ///////////////////////////////////////////////////////
-	/*#if CONFIG_IDF_TARGET_ESP32S2  || CONFIG_IDF_TARGET_ESP32C3
-		#error This ESP32 version is not supported
-	#else*/
 		//#define USE_VSPI              // default is HSPI ( for SPI-Stepper )
 										// on Nano ESP32 it is always FSPI
 		#define MIN_STEP_CYCLE 20       // Minimum number of µsec  per Step
@@ -208,7 +205,8 @@
 	#define STP_TIMR_NBR 0          // can be set to 1 on RP2350 ( Pico 2 )
 	#define SPI_CLOCK 2000000L
 #elif defined ARDUINO_ARCH_SAMD ////////////////////////////////////////////////////////
-	#define MIN_STEP_CYCLE  80       // Minimum number of µsec  per Step
+	#define MIN_STEP_CYCLE  50       // Minimum number of µsec  per Step
+	#define FAST_STEPRESET	1		// reset the step impulseat End of IRQ ( pulse may be short!!)
 	#define IRQ_PRIO 3				// NVIC priority. There are only 4 different level (0...3)
 									// Lower priority = higher value
 									// with WiFi active

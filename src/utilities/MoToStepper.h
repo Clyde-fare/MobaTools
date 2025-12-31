@@ -18,19 +18,20 @@
 
 
 // Output modes ( outarg in attach method )
-#define NO_OUTPUT   0
-
-#define STEPDIR_PINS      1
+enum outArg_t {
+	NO_OUTPUT   	= 0,
+	STEPDIR_PINS	= 1,
 #ifndef ESP8266
-#define SINGLE_PINS2     2		// don't change this number
-#define SINGLE_PINS4     4		// don't change this number
+	SINGLE_PINS2	= 2	,	// don't change this number
+	SINGLE_PINS4	= 4	,	// don't change this number
 
-#define SPI_1           5		// The numbers for SPI_1...SPI_4 must be in direct sequence
-#define SPI_2           6
-#define SPI_3           7
-#define SPI_4           8
+	SPI_1			= 5	,	// The numbers for SPI_1...SPI_4 must be in direct sequence
+	SPI_2 ,
+	SPI_3 ,
+	SPI_4 ,
 #endif
 
+};
 
 // #define CYCLETICS       (CYCLETIME*TICS_PER_MICROSECOND)
 constexpr uint16_t CYCLETICS   =  (CYCLETIME*TICS_PER_MICROSECOND);
@@ -188,7 +189,7 @@ class MoToStepper
     bool _chkRunning();             // check if stepper is running
     void initialize(long,uint8_t);
     uint16_t  _setRampValues();
-    uint8_t attach(uint8_t outArg, uint8_t*  ); // internal attach function ( called by one of the public attach
+    uint8_t attach(outArg_t outArg, uint8_t*  ); // internal attach function ( called by one of the public attach
   public:
     // don't allow copying and moving of Stepper objects
     MoToStepper &operator= (const MoToStepper & )    =delete;
@@ -203,7 +204,10 @@ class MoToStepper
                                         // mode means STEPDIR ( Step/Dir), HALFSTEP or FULLSTEP
         //Methods - not for ESP8266                               
         uint8_t attach( uint8_t,uint8_t,uint8_t,uint8_t); //single pins definition for output
-        uint8_t attach(uint8_t outArg);    // stepMode defaults to halfstep
+		#ifdef ARDUINO_ARCH_ESP32
+        uint8_t attach( outArg_t,uint8_t,uint8_t,uint8_t); //SPI definition for output with pindefs
+		#endif
+        uint8_t attach(outArg_t outArg);    //SPI definition for output without pindefs
 		void attachEnable( uint16_t delay ); // enable for unipolar steppers with 4 pins
     #endif
 	// Methods for all supported boards

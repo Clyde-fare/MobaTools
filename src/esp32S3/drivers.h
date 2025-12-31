@@ -16,26 +16,13 @@ extern "C" {
 #define servoCmp_t uint64_t	// values for 64-bit timer (default is uint16_t, because most timers are 16 bit )
 
 // ----------------   stepper related defines   ---------------------------------
-// use of SPI interface
-#ifdef ARDUINO_NANO_ESP32
-    #define SPI_USED    FSPI	// Arduino Nano uses Arduino pin numbers by default
-	#define MISO		12 		//GPIO47	
-    #define MOSI        11 		//GPIO38	
-    #define SCK         13 		//GPIO48	
-    #define SS          10 		//GPIO21	
-
-#elif defined USE_VSPI
-    #define SPI_USED    VSPI
-    #define MOSI        23
-    #define SCK         18
-    #define SS          5
-#else
-    // HSPI is used by default exept for Nano ESP32
-    #define SPI_USED    HSPI
-    #define MOSI        13
-    #define SCK         14
-    #define SS          15
-#endif
+// use of SPI interface. Pinnumbers can be overriden by attach Method
+// Default pinnumbers defined here are for Arduino Nano ESP32 
+#define SPI_USED    FSPI	// Arduino Nano uses Arduino pin numbers by default
+#define MISO		12 		//GPIO47	
+#define MOSI        11 		//GPIO38	
+#define SCK         13 		//GPIO48	
+#define SS          10 		//GPIO21	
 
 struct timerConfig_t {
   union {
