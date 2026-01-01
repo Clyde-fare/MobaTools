@@ -25,6 +25,8 @@
 // function to set/reset the stepper outputs ( 2 or 4 Pins, identified by the index in pin-Array)
 static inline __attribute__((__always_inline__)) void stepperWrite( stepperData_t *dataP, uint8_t pinIx, uint8_t state ) {
 	// to set the stepper outputs ( step/dir or FULL/HALF step ) that are defined in .pins or .portPins
+	// if invertflg is set for this pin, state must be inverted
+	if ( dataP->invFlg & invMsk[pinIx] ) state = !state;
 	if ( state ) {
 		// set Pin
 		#ifdef FAST_PORTWRT
@@ -141,20 +143,15 @@ bool MoToStepper::_chkRunning() { // ###########################################
 }
 
 // public functions -------------------
-uint8_t MoToStepper::attach( int stepP, int dirP ) { //######################################
-	// negative parameteers means the pin will be inverted ( only for STEPDIR )
+uint8_t MoToStepper::attach( uint8_t stepP, uint8_t dirP, uint8_t invFlg ) { //######################################
+	// negative parameteers means the pin will be inverted 
     // step motor driver STEPDIR or FULLSTEP with only 2 pins is used
     byte pins[2];
     if ( stepMode != STEPDIR && stepMode != FULLSTEP ) return 0;    // wrong mode
     DB_PRINT( "Attach with 2 pins, S=%d, D=%d\n\r", stepP, dirP );
     pins[0] = (byte)abs(stepP);
     pins[1] = (byte)abs(dirP);
-	if (stepMode == STEPDIR) {
-		// check for pin-Inverting
-		 _stepperData.lastPattern = 0;
-		 if ( stepP < 0 ) _stepperData.lastPattern |= STEPINVERT;
-		 if ( dirP < 0 ) _stepperData.lastPattern |= DIRINVERT;
-	}
+	_stepperData.invFlg = invFlg;
 	#ifndef ESP8266
 		// ESP8266 has no FULLSTEP mode
 		if ( stepMode == FULLSTEP ) return MoToStepper::attach( SINGLE_PINS2, pins );
@@ -163,12 +160,13 @@ uint8_t MoToStepper::attach( int stepP, int dirP ) { //#########################
 		return MoToStepper::attach(STEPDIR_PINS , pins );
 }
 #ifndef ESP8266
-uint8_t MoToStepper::attach( byte pin1, byte pin2, byte pin3, byte pin4 ) {
+uint8_t MoToStepper::attach( uint8_t pin1, uint8_t pin2, uint8_t pin3, uint8_t pin4, uint8_t invFlg ) {
     byte pins[4];
-    pins[0] = pin1;
-    pins[1] = pin2;
-    pins[2] = pin3;
-    pins[3] = pin4;
+    pins[0] = abs(pin1);
+    pins[1] = abs(pin2);
+    pins[2] = abs(pin3);
+    pins[3] = abs(pin4);
+	_stepperData.invFlg = invFlg;
     return MoToStepper::attach( SINGLE_PINS4, pins );
 }
 
@@ -220,12 +218,16 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
             // incompatible!
             attachOK = false;
         } else {
+			#ifdef ARDUINO_ARCH_ESP32
 			if ( pins != NULL ) {
 				// with definition of SPI-Pins ( only ESP32 )
 				initSpiAS(pins[0],pins[1],pins[2]); // CC, CLK, MOSI
 			} else {
 				initSpiAS();
 			}
+			#else
+				initSpiAS();
+			#endif
             MoToStepper::outputsUsed.outputs |= (1<<(outArg-SPI_1));
         }
         break;
@@ -241,7 +243,7 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
             _stepperData.pins[i] = pins[i];
             #endif
             pinMode( pins[i], OUTPUT );
-            digitalWrite( pins[i], LOW );
+            stepperWrite( &_stepperData,i, 0 );
         }
         break;
 	  #endif // no ESP8266
@@ -256,9 +258,8 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
             _stepperData.pins[i] = pins[i];
             #endif
             pinMode( pins[i], OUTPUT );
+			stepperWrite(&_stepperData,i, 0 );
         }
-        digitalWrite( pins[0], _stepperData.lastPattern&STEPINVERT );
-        digitalWrite( pins[1], (_stepperData.lastPattern&DIRINVERT)>>1 );
 		_stepperData.patternIxInc = 1;  // defines direction
 		DB_PRINT("STEPRIR attached, %d, %d", pins[0], pins[1] );
         break;
@@ -614,12 +615,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
                 _stepperData.patternIxInc   = patternIxInc;
 				// tSetupDIR: - Set dir OUTPUT if in STEPDIR mode
 				if ( stepMode == STEPDIR ) {
-					if ( _stepperData.lastPattern&DIRINVERT ) {
-					// inverted DIR
-						stepperWrite( &_stepperData, 1, (_stepperData.patternIxInc > 0) );
-					} else {
 						stepperWrite( &_stepperData, 1, (_stepperData.patternIxInc < 0) );
-					}
 				}
                 _stepperData.stepsInRamp    = 0;
                 _stepperData.stepCnt        = stepCnt;
@@ -638,12 +634,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
         _stepperData.patternIxInc = patternIxInc;
 		// tSetupDIR: - Set dir OUTPUT if in STEPDIR mode
 		if ( stepMode == STEPDIR ) {
-			if ( _stepperData.lastPattern&DIRINVERT ) {
-			// inverted DIR
-				stepperWrite( &_stepperData, 1, (_stepperData.patternIxInc > 0) );
-			} else {
 				stepperWrite( &_stepperData, 1, (_stepperData.patternIxInc < 0) );
-			}
 		}
         _stepperData.stepCnt = stepCnt;
         if ( stepValue == 0 ) {

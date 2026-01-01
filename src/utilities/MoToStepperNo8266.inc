@@ -44,20 +44,7 @@ bool IRAM_ATTR setStepperPins( stepperData_t *stepperDataP, uint8_t stepPattern 
 	  case SINGLE_PINS2 : // Outpins are individually defined
 	  case SINGLE_PINS4 : // Outpins are individually defined
 		for ( uint8_t bitNr = 0; bitNr < stepperDataP->output; bitNr++ ) {
-			// setStepperPinsAS( bitNr, stepPattern & (1<<bitNr) );
-			if ( stepPattern & (1<<bitNr) ) {
-				#ifdef FAST_PORTWRT
-				*stepperDataP->portPins[bitNr].Adr |= stepperDataP->portPins[bitNr].Mask;
-				#else
-				digitalWrite( stepperDataP->pins[bitNr], HIGH );
-				#endif
-			} else {
-				#ifdef FAST_PORTWRT
-				*stepperDataP->portPins[bitNr].Adr &= ~stepperDataP->portPins[bitNr].Mask;
-				#else    
-				digitalWrite( stepperDataP->pins[bitNr], LOW );
-				#endif    
-			}
+			stepperWrite( stepperDataP, bitNr, stepPattern & (1<<bitNr) );
 		}
 		break;
 	  default:
@@ -88,7 +75,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 	
 	#if FAST_STEPRESET == 0 // Steppin is not reset in same IRO as set	
 		if ( stepperDataP->stepActive>0 ) { // stepActive is always 0 in FULL and HALFSTEP
-			stepperWrite( stepperDataP, 0, (stepperDataP->lastPattern&STEPINVERT) );
+			stepperWrite( stepperDataP, 0, 0 );
 			stepperDataP->stepActive = 0;
 			resetPulse = true;
 			// Check if direction must be changed
@@ -102,12 +89,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// tSetupDIR: - change DIR output here if needed
 			// if needed dir output for next stepping pulse must be changed here
 			if  ( stepperDataP->output == STEPDIR_PINS && stepperDataP->patternIx == 1 && !resetPulse ) {
-				if ( stepperDataP->lastPattern&DIRINVERT ) {
-				// inverted DIR
-					stepperWrite( stepperDataP, 1, (stepperDataP->patternIxInc > 0) );
-				} else {
-					stepperWrite( stepperDataP, 1, (stepperDataP->patternIxInc < 0) );
-				}
+				stepperWrite( stepperDataP, 1, (stepperDataP->patternIxInc < 0) );
 				stepperDataP->patternIx = 0; // reset dir-change flags
 			}
 			// Now check if a step is due
@@ -180,19 +162,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     for ( bitNr = 0; bitNr < stepperDataP->output; bitNr++ ) {
                         if ( changedPins & (1<<bitNr ) ) {
                             // bit Changed, write to pin
-                            if ( stepPattern[ _patIx ] & (1<<bitNr) ) {
-                                #ifdef FAST_PORTWRT
-                                *stepperDataP->portPins[bitNr].Adr |= stepperDataP->portPins[bitNr].Mask;
-                                #else
-                                digitalWrite( stepperDataP->pins[bitNr], HIGH );
-                                #endif
-                            } else {
-                                #ifdef FAST_PORTWRT
-                                *stepperDataP->portPins[bitNr].Adr &= ~stepperDataP->portPins[bitNr].Mask;
-                                #else    
-                                digitalWrite( stepperDataP->pins[bitNr], LOW );
-                                #endif    
-                            }
+							stepperWrite( stepperDataP, bitNr, stepPattern[ _patIx ] & (1<<bitNr) );
                         }
                     }
                     stepperDataP->lastPattern = stepPattern[ _patIx ];
@@ -204,7 +174,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					#else
 						stepSet = 1;
 					#endif
-					stepperWrite( stepperDataP, 0, !(stepperDataP->lastPattern&STEPINVERT) );
+					stepperWrite( stepperDataP, 0, 1 );
 					stepperDataP->stepActive = 1;
 					stepperDataP->patternIx = 0; // changed to 1 later, if a dir-change is due
                     break;
@@ -511,7 +481,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 		while ( stepperDataP != NULL ) {
 
 			if ( stepperDataP->stepActive>0 ) { // stepActive is always 0 in FULL and HALFSTEP
-				stepperWrite( stepperDataP, 0, (stepperDataP->lastPattern&STEPINVERT) );
+				stepperWrite( stepperDataP, 0, 0 );
 				stepperDataP->stepActive = 0;
 				// Check if direction must be changed
 				/*if ( stepperDataP->patternIx == 1 ) {  // flag for dir change

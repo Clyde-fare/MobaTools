@@ -31,6 +31,15 @@ enum outArg_t {
 	SPI_4 ,
 #endif
 
+// Masks for output-invert ( used in attach() )
+#define INV_STEP 0x01
+#define INV_DIR  0x02
+#define INV_ALL  0x0F
+#define INV_PIN1 0x01
+#define INV_PIN2 0x02									
+#define INV_PIN3 0x04									
+#define INV_PIN4 0x08									
+
 };
 
 // #define CYCLETICS       (CYCLETIME*TICS_PER_MICROSECOND)
@@ -126,7 +135,7 @@ typedef struct stepperData_t {
   rampStat rampState;        	// State of stepper: stopped, cruising, acceleration/deceleration ...
   volatile long stepsFromZero;  // distance from last reference point ( always as steps in HALFSTEP mode )
                                 // in FULLSTEP mode this is twice the real step number
-  // bit-coded byte:
+  // bit-coded byte:/attach
   uint8_t output  :5 ;          //SPI_1,SPI_2,SPI_3, SPI_4, SINGLE_PINS2, SINGLE_PINS4, STEPDIR_PINS
   uint8_t delayActiv :1;        // enable delaytime is running
   uint8_t enable:1;             // true: enablePin=HIGH is active, false: enablePin=LOW is active
@@ -149,10 +158,13 @@ typedef struct stepperData_t {
   uint8_t pins[4];                 // Outputpins as Arduino numbers
   #endif
   uint8_t lastPattern;          // in FULLSTEP and HALFSTEP only changed pins are updated ( is faster ) 
-	#define STEPINVERT 0x01			// in STEPDIR mode lastPattern is used to store the invert flags
-	#define DIRINVERT  0x02								
-  uint8_t stepActive;			// step is active ( to know when we must reset it ) 
+  // bit-coded byte:
+  uint8_t invFlg:4;				// Invertflag for pin0...pin3
+  uint8_t reserved :3;
+  uint8_t stepActive:1;			// step is active ( to know when we must reset it ) 
 } stepperData_t ;
+
+constexpr uint8_t invMsk[] = {INV_PIN1,INV_PIN2,INV_PIN3,INV_PIN4};  // Mask to invert the output-Pins
 
 typedef union { // used output channels as bit and uint8_t
       struct {
@@ -203,7 +215,7 @@ class MoToStepper
 	#ifndef ESP8266 				// there are no different modes with ESP8266
                                         // mode means STEPDIR ( Step/Dir), HALFSTEP or FULLSTEP
         //Methods - not for ESP8266                               
-        uint8_t attach( uint8_t,uint8_t,uint8_t,uint8_t); //single pins definition for output
+        uint8_t attach( uint8_t,uint8_t,uint8_t,uint8_t,uint8_t invert=0); //single pins definition for output
 		#ifdef ARDUINO_ARCH_ESP32
         uint8_t attach( outArg_t,uint8_t,uint8_t,uint8_t); //SPI definition for output with pindefs
 		#endif
@@ -211,7 +223,7 @@ class MoToStepper
 		void attachEnable( uint16_t delay ); // enable for unipolar steppers with 4 pins
     #endif
 	// Methods for all supported boards
-    uint8_t attach( int stepP,int dirP); // Port for step and direction in STEPDIR mode
+    uint8_t attach( uint8_t,uint8_t,uint8_t invert=0); // Port for step and direction in STEPDIR mode
                                     // returns 0 on failure
     void attachEnable( uint8_t enableP, uint16_t delay, bool active ); // define an enable pin and the delay (ms) between enable and starting/stopping the motor. 
                                                                           // 'active' defines if the output is HIGH or LOW to activate the motirdriver.
