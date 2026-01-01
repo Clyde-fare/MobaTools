@@ -20,7 +20,7 @@ Released versions can be installed by means of the library manager in arduino ID
 - RP2040 / RP2350 processors ( the [core of Earle Philhower](https://github.com/earlephilhower/arduino-pico) must be used )
 - STM32F103x processors ( the [core of Roger Clark](https://github.com/rogerclarkmelbourne/Arduino_STM32) must be used )
 - ESP32 ( core versions 2.x and 3.x )
-- ESP32S3 ( Arduino Nano ESP32 )
+- ESP32S3 ( Arduino Nano ESP32 ) and other variants (C3,S3,S2)
 - ESP8266 ( with some restrictions )
 
 A documentation file in [german](MobaTools-300-de.pdf) and [english](MobaTools-300-en.pdf) is provided.
@@ -32,10 +32,11 @@ A documentation file in [german](MobaTools-300-de.pdf) and [english](MobaTools-3
 | 3.0.0 | 2026-xx-xx| 
 | | | old classnames from V1.x are no longer valid
 | | | Support of SamD21 MCU (MKR-Series, Nano 33 Iot ...)
-| | | Support of Arduino Nano ESP32 (ESP32S3)
-| | | Synced stepper move with acceleration and deceleration
-| | | MoTostepper: step/dir pins can be inverted
-| | | MoTostepper: in FULLSTEP 2-pin output is possible
+| | | Support of Arduino Nano ESP32 (ESP32S3) and variants(C3,S3,S2)
+| | | MoToStepper:
+| | | >Setting SPI-pins for SPI-driven steppers on ESP32 boards in attach()
+| | | >Synced stepper move with acceleration and deceleration
+| | | >In FULLSTEP 2-pin output is possible
 | | | some bugfixes and internal enhancements
 | 2.7.0 | 2025-03-05| several bugfixes, some docu enhancements
 | | | Support of RP2040 / RP2350
