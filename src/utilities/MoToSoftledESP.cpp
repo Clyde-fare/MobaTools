@@ -6,14 +6,14 @@
   Functions for the softled part of MobaTools
 */
 
-#if defined CONFIG_IDF_TARGET_ESP32 || defined ARDUINO_ARCH_ESP8266
 // only ESP32 and ESP8266  -  ESP32Sx or Cx use the standard Softled for 32Bit processors
 #define COMPILING_MOTOSOFTLEDESP_CPP
-
+#pragma message " Softleds for ESP32 PWM-HW "
 //#define debugTP
 //#define debugPrint
 #include <utilities/MoToDbg.h>
 #include <MobaTools.h>
+#if CONFIG_IDF_TARGET_ESP32 || defined ARDUINO_ARCH_ESP8266
 
 // Global Data for all instances and classes  --------------------------------
 //void ICACHE_RAM_ATTR ISR_Softled( void *arg ) {

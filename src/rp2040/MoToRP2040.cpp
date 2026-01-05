@@ -99,7 +99,12 @@ void enableServoIsrAS() {
 }
 
 
-
+/* There is a fixed assignment between GPIO number and possible SPI function. Every GPIO can only be assigned
+ to one fixed SPI-function. But for one SPI function there are different GPIO's possible ( see chapter 
+ 2.19.2 in RP2040 datasheet or chapter  9.4 in RP2350 datasheet
+ SS-Pins (SPI_CSN) SPI0: 1, 5,17,21
+ SS-Pins (SPI_CSN) SPI1: 9,13,25,29
+ */
 #ifndef USE_SPI1
 // Set SPI pins ( RX/MISO pin is not defined/used )
   #ifdef ARDUINO_NANO_RP2040_CONNECT

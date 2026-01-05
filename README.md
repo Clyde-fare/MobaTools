@@ -35,6 +35,7 @@ A documentation file in [german](https://github.com/MicroBahner/MobaTools/blob/m
 | | | Support of Arduino Nano ESP32 (ESP32S3) and variants(C3,S3,S2)
 | | | MoToStepper:
 | | | >Setting SPI-pins for SPI-driven steppers on ESP32 boards in attach()
+| | | >The stepper pins can be configured to output the signal inverted (individually for each pin).
 | | | >Synced stepper move with acceleration and deceleration
 | | | >In FULLSTEP 2-pin output is possible
 | | | some bugfixes and internal enhancements

@@ -61,7 +61,6 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     stepperData_t *stepperDataP;         // actual stepper data in IRQ
 	stepperSyncData_t *locSyncDataP;	 // Data for synchronous move ( =NULL if no sync move active )
     uint8_t spiChanged, changedPins, bitNr;
-	uint8_t stepSet;	// >0 if a step pin was set ( only used with STEP_RESET
     //SET_TP1;SET_TP4; // Oszimessung Dauer der ISR-Routine
     spiChanged = false;
     #ifdef __AVR_MEGA__
