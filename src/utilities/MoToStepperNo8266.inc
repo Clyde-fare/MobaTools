@@ -61,6 +61,9 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     stepperData_t *stepperDataP;         // actual stepper data in IRQ
 	stepperSyncData_t *locSyncDataP;	 // Data for synchronous move ( =NULL if no sync move active )
     uint8_t spiChanged, changedPins, bitNr;
+	#if FAST_STEPRESET != 0 // Steppin is reset in same IRO as set
+	uint8_t stepSet;	// >0 if a step pin was set ( only used with STEP_RESET
+	#endif
     //SET_TP1;SET_TP4; // Oszimessung Dauer der ISR-Routine
     spiChanged = false;
     #ifdef __AVR_MEGA__
@@ -96,7 +99,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// ->cycCnt now contains the cycles since the last step was generated.
             #ifdef USE_JITTER  // only on 32-Bit MCU's
 			// A step is created even if we are MAX_JITTER too early
-            if ( stepperDataP->cycCnt + MAX_JITTER >= ( stepperDataP->aCycSteps )  /*&& !resetPulse*/ ) {
+            if ( stepperDataP->cycCnt + MAX_JITTER >= ( (intxx_t)stepperDataP->aCycSteps )  /*&& !resetPulse*/ ) {
                 //SET_TP4;
 				// next step can be be shorter or longer then computed, but only within MAX_JITTER
 				// to compensate creating of this step too late or too early
@@ -109,7 +112,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 				
                 //CLR_TP4;
             #else // not 32bit ( never use a jitter computing ) 
-            if ( stepperDataP->cycCnt >= ( stepperDataP->aCycSteps ) ) {
+            if ( (uintxx_t)stepperDataP->cycCnt >= ( stepperDataP->aCycSteps ) ) {
                 //SET_TP2;
                 stepperDataP->cycCnt = 0 ;
             #endif
@@ -446,7 +449,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// Check if time between last step and disabling the motor has elapsed
             //stepperDataP->cycCnt+=cyclesLastIRQ;
             stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;
-            if ( stepperDataP->cycCnt >= stepperDataP->aCycSteps+MAX_JITTER ) {
+            if ( (uintxx_t)stepperDataP->cycCnt >= stepperDataP->aCycSteps+MAX_JITTER ) {
                 stepperDataP->cycCnt = MAX_JITTER;
 				if ( stepperDataP->enablePin == NO_ENABLEPIN ) {
 					// set motorwires to 0 to disable the motor

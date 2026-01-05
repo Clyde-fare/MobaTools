@@ -1,10 +1,11 @@
 #ifndef MOTODEBUG_H
 #define MOTODEBUG_H
+#define MESSAGES 0  // Level of #pragma messages to output ( 0 = no messages )
+
 // die folgenden defines werden im aufrufenden cpp-File gesetzt.
 // so können die debugs klassenspezifisch eingeschaltet werden
 //#define debugTP
 //#define debugPrint
-
 // über diese undef's kann das Debugging global abgeschaltet werden
 #undef debugTP
 #undef debugPrint

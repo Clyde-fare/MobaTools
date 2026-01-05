@@ -101,7 +101,7 @@ extern pwmUse_t pwmUse[16];
 #define LED_TIMER           3
 
 int8_t initPwmChannel( uint8_t pin, uint8_t timer );
-void IRAM_ATTR setPwmDuty(int8_t pwmNbr, uint32_t duty );
+void setPwmDuty(int8_t pwmNbr, uint32_t duty );
 void setPwmPin( uint8_t pwmNbr ) ;
 int8_t freePwmNbr( uint8_t pwmNbr );
 

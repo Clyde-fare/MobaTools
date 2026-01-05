@@ -3,8 +3,10 @@
 #define debugPrint
 #include <MobaTools.h>  // Values for ...TARGET_ESP32xx are defined includes called here
 #if CONFIG_IDF_TARGET_ESP32
-#pragma message "Info: compiling MoToESP32"
 
+#if MESSAGES > 0  
+#pragma message "Info: compiling MoToESP32"
+#endif
 
 //#warning "HW specfic - ESP32 ---"
 
@@ -24,8 +26,8 @@ void IRAM_ATTR ISR_Stepper(void) {
 	// next alarm ISR must be at least MIN_STEP_CYCLE/2 beyond last alarm value ( time between to ISR's )
     lastAlarm = aktAlarm;
     aktAlarm = lastAlarm+(nextCycle*TICS_PER_MICROSECOND); // minimumtime until next Interrupt
-    uint64_t minNextAlarm = lastAlarm + (MIN_STEP_CYCLE*TICS_PER_MICROSECOND/2);
-	/*if ( aktAlarm < minNextAlarm ) {
+    /*uint64_t minNextAlarm = lastAlarm + (MIN_STEP_CYCLE*TICS_PER_MICROSECOND/2);
+	if ( aktAlarm < minNextAlarm ) {
 		// time till next ISR ist too short, set to mintime and adjust nextCycle
         CLR_TP1;
 		aktAlarm =  minNextAlarm;

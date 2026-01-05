@@ -4,7 +4,9 @@
 //#define debugPrint
 #include <MobaTools.h>
 
-//#pragma message "HW specfic - avr ---"
+#if MESSAGES > 0  
+#pragma message "HW specfic - avr ---"
+#endif
 
 uint8_t noStepISR_Cnt;   // Counter for nested StepISr-disable
 

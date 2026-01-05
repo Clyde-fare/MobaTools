@@ -8,7 +8,10 @@
 
 // only ESP32 and ESP8266  -  ESP32Sx or Cx use the standard Softled for 32Bit processors
 #define COMPILING_MOTOSOFTLEDESP_CPP
+#if MESSAGES > 0  
 #pragma message " Softleds for ESP32 PWM-HW "
+#endif
+
 //#define debugTP
 //#define debugPrint
 #include <utilities/MoToDbg.h>

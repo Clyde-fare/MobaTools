@@ -112,7 +112,7 @@ static inline __attribute__((__always_inline__)) void setServoCmpAS(uint16_t cmp
 		dbSvIx++;
 	}
 #endif
-	gptRegP->GTCCR[1] = cmpValue > TIMER_OVL_TICS ? TIMER_OVL_TICS : cmpValue;
+	gptRegP->GTCCR[1] = /*cmpValue > TIMER_OVL_TICS ? TIMER_OVL_TICS :*/ cmpValue;
 }	
 #endif // COMPILING_MOTOSERVO_CPP
 

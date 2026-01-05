@@ -3,7 +3,9 @@
 // ESP32 specific defines for Cpp files
 #define TODO 	// ignore TODO-marker
 
+#if MESSAGES > 0
 #pragma message "ESP32S3 (Nano-ESP32) specific cpp includes"
+#endif
 
 void ISR_Servo();
 void ISR_Stepper();

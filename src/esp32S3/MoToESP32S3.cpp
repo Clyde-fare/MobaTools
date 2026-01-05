@@ -4,9 +4,9 @@
 #include <MobaTools.h>
 #ifdef IS_ESP32S
 
-#pragma message "compilingMoToESP32S3"
-
-//#warning "HW specfic - ESP32S3 ---"
+#if MESSAGES > 0  
+#pragma message "compiling MoToESP32S3"
+#endif
 
 bool spiInitialized = false;
 void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ)  __attribute__ ((weak));

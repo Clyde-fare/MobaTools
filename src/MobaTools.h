@@ -23,11 +23,11 @@
    
   History:
   V3.0 x-2026
-  - Old compatibility method names no longer available
+  - Old method names (compatibility to V1 ) are no longer available
   - Synced stepper movement with acceleration
   - support of Samd21 MCU
   - support of Arduino Nano ESP32
-  - step/dir pins can be inverted
+  - stepper pins can be inverted
   V2.7.1 x-2025
 	- RP204 processers: priority of timer IRQ can be set in MobaTools.h
   V2.7.0 3-2025

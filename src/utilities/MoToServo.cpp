@@ -15,7 +15,7 @@
 // Variables for servos
 static byte servoCount = 0;
 #ifdef IS_ESP //------------------- Servo Interrupt für ESP8266 und ESP32 ----------------------
-static bool speedV08 = false;    // Compatibility-Flag for speed method
+// no more used in V3:static bool speedV08 = false;    // Compatibility-Flag for speed method
 
 /////////////////////////////  Pulse-interrupt for ESP8266 and ESP 32  /////////////////////////////////////////
 // This ISR is fired at the falling edge of the servo pulse. It is specific to every servo Objekt and
@@ -100,8 +100,10 @@ void IRAM_ATTR ISR_Servo( void *arg ) {
 
 #else //------------------ Timer-interrupt when PWM HW is not existent or not used -----------------------------
 #ifndef servoCmp_t
-#define servoCmp_t uint16_t  //default is a 16-Bit Timer but for ESP32Sx its 64/54 bit
-#pragma message "servoCmp_t as default ( uint16_t)"
+	#define servoCmp_t uint16_t  //default is a 16-Bit Timer but for ESP32Sx its 64/54 bit
+	#if MESSAGES > 1
+	#pragma message "servoCmp_t as default ( uint16_t)"
+	#endif
 #endif
 static servoData_t* lastServoDataP = NULL; //start of ServoData-chain
 static servoData_t* pulseP = NULL;         // pulse Ptr in IRQ
@@ -375,7 +377,7 @@ uint8_t MoToServo::attach( byte pinArg, uint16_t pmin, uint16_t pmax, bool autoO
     DB_PRINT("Servoattach: pwmNbr=%d, servoIx=%d, Pin=%d", _servoData.pwmNbr, _servoData.servoIx, pinArg );
     if ( _servoData.pwmNbr >= 0  ||  _servoData.servoIx >= MAX_SERVOS ) return 0;
     #ifdef ESP8266 // check pinnumber
-        if ( pinArg <0 || pinArg >15 || gpioUsed(pinArg ) ) return 0;
+        if ( pinArg >15 || gpioUsed(pinArg ) ) return 0;
         setGpio(pinArg);    // mark pin as used
     #endif   
     // set pulselength for angle 0 and 180

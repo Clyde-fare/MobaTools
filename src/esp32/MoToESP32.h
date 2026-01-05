@@ -3,8 +3,14 @@
 // ESP32 specific defines for Cpp files
 
 //#warning ESP32 specific cpp includes
+int8_t initPwmChannel( uint8_t pin, uint8_t timer );
+void IRAM_ATTR setPwmDuty(int8_t pwmNbr, uint32_t duty );
+void setPwmPin( uint8_t pwmNbr ) ;
+int8_t freePwmNbr( uint8_t pwmNbr );
 void seizeTimerAS();
 void ISR_Servo( void *arg );
+
+
 inline __attribute__((__always_inline__)) void _noStepIRQ() {
     portENTER_CRITICAL(&stepperMux);
     #if defined COMPILING_MOTOSTEPPER_CPP
