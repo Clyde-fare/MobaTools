@@ -19,11 +19,17 @@ extern "C" {
 // use of SPI interface. Pinnumbers can be overriden by attach Method
 // Default pinnumbers defined here are for Arduino Nano ESP32 
 #define SPI_USED    FSPI	// Arduino Nano uses Arduino pin numbers by default
-#define MISO		12 		//GPIO47	
-#define MOSI        11 		//GPIO38	
-#define SCK         13 		//GPIO48	
-#define SS          10 		//GPIO21	
 
+/* SPI-Pins are defined in '...\variants\boardname' files as const uint8_t
+   it cannot be checked witn #ifdef here
+#ifndef MISO // supposing that all SPI-pins are defined if MISO is defined
+	#pragma message "no default SPI-pins defined in MobaTools"
+	#define MISO		12 		//GPIO47	
+	#define MOSI        11 		//GPIO38	
+	#define SCK         13 		//GPIO48	
+	#define SS          10 		//GPIO21
+#endif	
+*/
 struct timerConfig_t {
   union {
     struct {

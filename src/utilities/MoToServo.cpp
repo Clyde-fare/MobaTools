@@ -432,8 +432,9 @@ uint8_t MoToServo::attach( byte pinArg, uint16_t pmin, uint16_t pmax, bool autoO
 void MoToServo::detach()
 {
     if ( _servoData.pwmNbr == NOT_ATTACHED ) return; // only if servo is attached
-    byte tPin = _servoData.pin;
     while( digitalRead( _servoData.pin ) ); // don't detach during an active pulse
+    byte tPin = _servoData.pin; // must be after while to suppress an indentation warning
+	// active pulse end
     noInterrupts();
     _servoData.on = false;  
     _servoData.soll = INVALID;  
