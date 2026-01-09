@@ -578,7 +578,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 				if ( _stepperData.syncMode == syncStat::SLAVE ) {
 					// it is a slave, so no own speed settings
 					#ifndef ESP8266  // no sync move with ESP8266
-					_stepperData.aCycSteps      = UINT_MAX; // don't create own step
+					_stepperData.aCycSteps      = ACYC_MAX; // don't create own step
 					_stepperData.cycCnt			= 0;
 					_stepperData.rampState		= rampStat::CRUISING;
 				   if ( _stepperData.enableOn ) {
@@ -648,7 +648,7 @@ void MoToStepper::_doSteps( long stepValue, bool absPos ) {
 			if ( _stepperData.syncMode == syncStat::SLAVE ) {
 				// it is a slave, so no own speed settings
 				#ifndef ESP8266  // no sync move with ESP8266
-				_stepperData.aCycSteps      = UINT_MAX; // don't create own step
+				_stepperData.aCycSteps      = ACYC_MAX; // don't create own step
 				_stepperData.cycCnt			= 0;
 				if ( _stepperData.enableOn ) {
 						// start delaytime ( Stepper is enabled in ISR )

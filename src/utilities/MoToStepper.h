@@ -95,6 +95,13 @@ struct stepperSyncData_t {			// this is a circular chain of steppers in sync
 	uint32_t ratioCnt;				// Counter to determine next slave step
 };
 
+#ifdef IS_32BIT
+	typedef int32_t cycles_t;
+	#define ACYC_MAX  INT_MAX
+#else
+	typedef uint16_t cycles_t;
+	#define ACYC_MAX   UINT_MAX
+#endif
 
 typedef struct stepperData_t {
   struct stepperData_t *nextStepperDataP;    // chain pointer
@@ -117,15 +124,15 @@ typedef struct stepperData_t {
 	// on the other platforms the time values count in cycles.
     // On 32-bit processors cyclelength is 1 µsec, and there is no remainder
 	// On 8-bit AVR sycle length is defined in MobaTools.h ( = min time between IRQ's )
-	uintxx_t tCycSteps;           // nbr of cycles per step ( target value of motorspeed  )
-	volatile uintxx_t aCycSteps;  // nbr of cycles per step ( actual motorspeed  )
+	cycles_t tCycSteps;           // nbr of cycles per step ( target value of motorspeed  )
+	volatile cycles_t aCycSteps;  // nbr of cycles per step ( actual motorspeed  )
     #ifndef IS_32BIT
     // Remainder needed only on 8-Bit processors
 	uint16_t tCycRemain;          // Remainder of division when computing tCycSteps
 	uint16_t aCycRemain;          // accumulate tCycRemain when cruising
     #endif
-	uintxx_t cyctXramplen;        // precompiled  tCycSteps*(rampLen+RAMPOFFSET)
-    volatile intxx_t cycCnt;     // counting cycles until a step is due
+	cycles_t cyctXramplen;        // precompiled  tCycSteps*(rampLen+RAMPOFFSET)
+    volatile cycles_t cycCnt;     // counting cycles until a step is due
 	uintxx_t cycDelay;            // delay time enable -> stepping
   #endif
   uintxx_t  stepRampLen;        // Length of ramp in steps

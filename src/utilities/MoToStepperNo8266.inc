@@ -99,7 +99,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// ->cycCnt now contains the cycles since the last step was generated.
             #ifdef USE_JITTER  // only on 32-Bit MCU's
 			// A step is created even if we are MAX_JITTER too early
-            if ( stepperDataP->cycCnt + MAX_JITTER >= ( (intxx_t)stepperDataP->aCycSteps )  /*&& !resetPulse*/ ) {
+            if ( stepperDataP->cycCnt + MAX_JITTER >= ( stepperDataP->aCycSteps )  /*&& !resetPulse*/ ) {
                 //SET_TP4;
 				// next step can be be shorter or longer then computed, but only within MAX_JITTER
 				// to compensate creating of this step too late or too early
@@ -363,7 +363,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 				} else { // ----------- End of check if not a SLAVE ---------------------------
 					// it is a slave and did one step
 					// set aCycSteps to max, so that no step is generated, until master sets aCycSteps again
-					stepperDataP->aCycSteps = UINT_MAX;
+					stepperDataP->aCycSteps = ACYC_MAX;
 				}
                 //CLR_TP3;
 				//if ( locSyncDataP != NULL && locSyncDataP->ratioToMaster == 0 ) {
@@ -449,7 +449,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// Check if time between last step and disabling the motor has elapsed
             //stepperDataP->cycCnt+=cyclesLastIRQ;
             stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;
-            if ( (uintxx_t)stepperDataP->cycCnt >= stepperDataP->aCycSteps+MAX_JITTER ) {
+            if ( stepperDataP->cycCnt >= stepperDataP->aCycSteps+MAX_JITTER ) {
                 stepperDataP->cycCnt = MAX_JITTER;
 				if ( stepperDataP->enablePin == NO_ENABLEPIN ) {
 					// set motorwires to 0 to disable the motor
@@ -461,7 +461,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 				}
                 stepperDataP->rampState = rampStat::STOPPED;
             }
-			nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps+MAX_JITTER-stepperDataP->cycCnt );
+			nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps-stepperDataP->cycCnt );
 
         }
 
@@ -509,7 +509,7 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
     uint16_t tCycRemain;        // Remainder of division when computing tCycSteps
     long     tMicroSteps;       // Microseconds per step
 	#endif
-    uintxx_t newCyctXramplen;      // precompiled  tCycSteps*rampLen*RAMPOFFSET
+    cycles_t newCyctXramplen;      // precompiled  tCycSteps*(rampLen+RAMPOFFSET)
     uintxx_t newRampLen;         // new ramplen
     uintxx_t newStepsInRamp;     // new stepcounter in ramp - according to new speed and ramplen
     intxx_t  newDeltaSteps = 1;  //  only for SPEEDDECEL
