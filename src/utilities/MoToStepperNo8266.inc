@@ -105,9 +105,9 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 				// to compensate creating of this step too late or too early
 				stepperDataP->cycCnt =  stepperDataP->cycCnt - stepperDataP->aCycSteps ;
 				if ( stepperDataP->cycCnt > MAX_JITTER ) {
-					SET_TP4;
+					//SET_TP4;
 					stepperDataP->cycCnt = MAX_JITTER;
-					CLR_TP4;
+					//CLR_TP4;
 				}
 				
                 //CLR_TP4;
@@ -197,14 +197,14 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                     if (stepperDataP->stepCnt2 > 0 ) { // check if we have to start a movement backwards
                         // yes, change Direction and go stpCnt2 Steps
                         stepperDataP->patternIxInc = -stepperDataP->patternIxInc;
-						SET_TP3;
+						//SET_TP3;
 						if (stepperDataP->output == STEPDIR_PINS) {
 							stepperDataP->patternIx = 1;  // flag for dir change
 							#if FAST_STEPRESET != 0 // Steppin is reset in same IRO as set	
 							nextCycle = MIN_STEP_CYCLE/2; // dir will be switched in half of min steptime
 							#endif
 								}
-						CLR_TP3;
+						//CLR_TP3;
                         stepperDataP->stepCnt = stepperDataP->stepCnt2;
                         stepperDataP->stepCnt2 = 0;
                         stepperDataP->rampState = rampStat::RAMPACCEL;
@@ -449,8 +449,8 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 			// Check if time between last step and disabling the motor has elapsed
             //stepperDataP->cycCnt+=cyclesLastIRQ;
             stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;
-            if ( stepperDataP->cycCnt >= stepperDataP->aCycSteps+MAX_JITTER ) {
-                stepperDataP->cycCnt = MAX_JITTER;
+            if ( stepperDataP->cycCnt >= stepperDataP->aCycSteps ) {
+                stepperDataP->cycCnt = 0;
 				if ( stepperDataP->enablePin == NO_ENABLEPIN ) {
 					// set motorwires to 0 to disable the motor
 					spiChanged = setStepperPins( stepperDataP, 0 );
@@ -460,9 +460,11 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					digitalWrite( stepperDataP->enablePin, !stepperDataP->enable );
 				}
                 stepperDataP->rampState = rampStat::STOPPED;
-            }
-			nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps-stepperDataP->cycCnt );
-
+            } else {
+				SET_TP4;
+				nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps-stepperDataP->cycCnt );
+				CLR_TP4;
+			}
         }
 
         stepperDataP = stepperDataP->nextStepperDataP;
@@ -501,7 +503,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 
 uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
     // Set speed and length of ramp to reach speed ( from stop )
-    // neagtive ramplen means it was set automatically
+    // negative ramplen means it was set automatically
     //SET_TP4;
     rampStat newRampState;      // State of acceleration/deceleration
     uintxx_t tCycSteps;         // nbr of IRQ cycles per step ( new target value of motorspeed  )
@@ -518,11 +520,11 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
     if ( _stepperData.output == NO_OUTPUT ) return 0; // --------------->>>>>>>>>>>>>>>>not attached
     // compute new speed values, adjust length of ramp if necessary
     //actSpeed10 = oldSpeed10 = _stepSpeed10;
-        
     newRampLen = abs(rampLen);    // negative values are invalid ( indicate automatically adjusted length )
     if (rampLen<0) newRampLen--;
     if (newRampLen > MAXRAMPLEN ) newRampLen = MAXRAMPLEN;
     newSpeed10 = min( uintxx_t(1000000L / MIN_STEPTIME * 10), speed10 );
+    DB_PRINT("newSpeed10=%d",newSpeed10);   
 	_noStepIRQ();
 	if ( newSpeed10 == 0) {
 		if ( _stepperData.speedZero == NORMALSPEED ) {
@@ -601,6 +603,7 @@ uintxx_t MoToStepper::setSpeedSteps( uintxx_t speed10, intxx_t rampLen ) {
         uint8_t loopCnt = 5;
         do { //CLR_TP3;
             // read actual ISR values
+			DB_PRINT("get ISR values");
             newRampState = _stepperData.rampState;
             __stepCnt       =  _stepperData.stepCnt; 
             __newStepCnt    = 0;    // if stepcnt is to be changed

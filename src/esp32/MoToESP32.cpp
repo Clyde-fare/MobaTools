@@ -1,6 +1,6 @@
 // ESP32 HW-spcific Functions
 #define debugTP
-#define debugPrint
+//#define debugPrint
 #include <MobaTools.h>  // Values for ...TARGET_ESP32xx are defined includes called here
 #if CONFIG_IDF_TARGET_ESP32
 
@@ -18,7 +18,7 @@ static uint64_t lastAlarm, aktAlarm;
 
 void IRAM_ATTR ISR_Stepper(void) {
     // Timer running up, used for stepper motor. No reload of timer
-    SET_TP1;
+    SET_TP3;
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
     portENTER_CRITICAL_ISR(&stepperMux);
     cyclesLastIRQ = (aktAlarm - lastAlarm) / TICS_PER_MICROSECOND;
@@ -32,6 +32,7 @@ void IRAM_ATTR ISR_Stepper(void) {
         CLR_TP1;
 		aktAlarm =  minNextAlarm;
 	}*/
+	CLR_TP3;
 	#if (ESP_ARDUINO_VERSION_MAJOR == 2)
      timerAlarmWrite(stepTimer, aktAlarm , false); // no autorelaod
      timerAlarmEnable(stepTimer);
@@ -41,9 +42,9 @@ void IRAM_ATTR ISR_Stepper(void) {
 	#else
 		 #error "ESP-core version unsupported"
     #endif
-    SET_TP1;
+    SET_TP3;
     portEXIT_CRITICAL_ISR(&stepperMux);
-    CLR_TP1; // Oszimessung Dauer der ISR-Routine
+    CLR_TP3; // Oszimessung Dauer der ISR-Routine
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
 timerConfig_t timerConfig;

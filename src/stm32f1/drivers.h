@@ -20,6 +20,7 @@
 //#define TICS_PER_MICROSECOND 2 // prescaler is 36 = 0.5us
 
 #define MT_TIMER TIMER4     // Timer used by MobaTools
+#define MT_NVIC_IRQ NVIC_TIMER4 // NVIC-IRQ nbr of MobaTools timer
 #define STEP_CHN    1       // OCR channel for Stepper and Leds
 #define TIMER_STEPCH_IRQ TIMER_CC1_INTERRUPT
 #define SERVO_CHN   2       // OCR channel for Servos

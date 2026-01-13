@@ -1,8 +1,8 @@
 // STM32F1 HW-spcific Functions
 #ifdef ARDUINO_ARCH_STM32F1
 #define bool int
-#define debugTP
-//#define debugPrint
+//#define debugTP
+#define debugPrint
 #include <MobaTools.h>
 //#include <utilities/MoToDbg.h>
 
@@ -24,21 +24,6 @@ void ISR_Stepper() {
     if ( softledISR ) softledISR(cyclesLastIRQ);
     // ======================= end of softleds =====================================
     // set compareregister to next interrupt time;
-	// next ISR must be at least MIN_STEP_CYCLE/4 beyond actual counter value ( time between to ISR's )
-
-	/*int minOCR = timer_get_count(MT_TIMER);
-	int nextOCR = timer_get_compare(MT_TIMER, STEP_CHN);
-	if ( minOCR < nextOCR ) minOCR += TIMER_OVL_TICS; // timer had overflow already
-    minOCR = minOCR + ( (MIN_STEP_CYCLE/4) * TICS_PER_MICROSECOND ); // minimumvalue for next OCR
-	nextOCR = nextOCR + ( nextCycle * TICS_PER_MICROSECOND );
-	if ( nextOCR < minOCR ) {
-		// time till next ISR ist too short, set to mintime and adjust nextCycle
-        SET_TP2;
-		nextOCR = minOCR;
-		nextCycle = ( nextOCR - timer_get_compare(MT_TIMER, STEP_CHN)  ) / TICS_PER_MICROSECOND;
-        CLR_TP2;
-	}
-    if ( nextOCR > (uint16_t)TIMER_OVL_TICS ) nextOCR -= TIMER_OVL_TICS;*/
 	uint16_t actCompare = timer_get_compare(MT_TIMER, STEP_CHN);
 	uint16_t add2Ocr = nextCycle * TICS_PER_MICROSECOND; // tics to add to current compare reg
 	uint16_t minDiff = (timer_get_count(MT_TIMER)+MIN_TIC_DIFF) - actCompare;
@@ -58,6 +43,7 @@ void ISR_Stepper() {
 void seizeTimerAS() {
     static bool timerInitialized = false;
     if ( !timerInitialized ) {
+		DB_PRINT("Initialize MoToTimer");
         timer_init( MT_TIMER );
         timer_pause(MT_TIMER);
         // IRQ-Priorität von timer 4 interrupt auf lowest (15) setzen

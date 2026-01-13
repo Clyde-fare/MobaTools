@@ -173,6 +173,7 @@ uint8_t MoToStepper::attach( uint8_t pin1, uint8_t pin2, uint8_t pin3, uint8_t p
 #ifdef ARDUINO_ARCH_ESP32
 uint8_t MoToStepper::attach( outArg_t outArg, byte ccPin, byte clkPin, byte MosiPin ) {
 	// SPI-attach with pin-definitions ( only for ESP32 )
+	// This does not seem to work on Variants C3,C6,S2 ...
 	if ( outArg < SPI_1 ) return 0; // wrong mode
     byte pins[4];
     pins[0] = ccPin;
@@ -261,7 +262,7 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
 			stepperWrite(&_stepperData,i, 0 );
         }
 		_stepperData.patternIxInc = 1;  // defines direction
-		DB_PRINT("STEPRIR attached, %d, %d", pins[0], pins[1] );
+		DB_PRINT("STEPDIR attached, %d, %d", pins[0], pins[1] );
         break;
      default:
         // invalid Arg
@@ -270,8 +271,9 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
     if ( attachOK ) {
         _stepperData.output = outArg;
         _stepperData.rampState = rampStat::STOPPED;
+		DB_PRINT("Defaults setzen");
         setSpeedSteps( DEF_SPEEDSTEPS, DEF_RAMP );
-		DB_PRINT("Timer einrichten\n\r");
+		DB_PRINT("Timer einrichten");
         seizeTimerAS();
         enableStepperIsrAS();
     }

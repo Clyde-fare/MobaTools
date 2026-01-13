@@ -219,7 +219,7 @@ void MoToSoftLed::off(uint8_t brightness ){
 void MoToSoftLed::on(){
     LedStats_t oldState, stateT;
     if ( _ledData.state ==  NOTATTACHED ) return;  // this is not a valid instance
-    SET_TP3;
+    //SET_TP3;
     // Don't do anything if its already ON 
     if ( _setpoint != ON  ) {
         _setpoint        = ON ;
@@ -241,7 +241,7 @@ void MoToSoftLed::on(){
             startLedPulseAS( _ledData.pwmNbr, _ledData.invFlg, MIN_PULSE );
         }
     }
-    CLR_TP3;
+    //CLR_TP3;
     //DB_PRINT( "Led %d On, state=%d", ledIx, _ledData.state);
 }
 

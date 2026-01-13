@@ -1,5 +1,6 @@
 #ifndef MOTODEBUG_H
 #define MOTODEBUG_H
+
 #define MESSAGES 0  // Level of #pragma messages to output ( 0 = no messages )
 
 // die folgenden defines werden im aufrufenden cpp-File gesetzt.
@@ -148,6 +149,7 @@
 			#define TP3 19	//10
 			#define TP4 20	//11
 		#elif defined ESP32
+			#pragma message "Debug-ports for ESP32"
 			#define TP1 22	//A5
 			#define TP2 21	//A4
 			#define TP3 15	//10

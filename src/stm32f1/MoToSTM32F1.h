@@ -3,34 +3,33 @@
 // STM32F1 specific defines for Cpp files
 
 //#warning STM32F1 specific cpp includes
-extern uint8_t noStepISR_Cnt;   // Counter for nested StepISr-disable
+extern uint8_t noStepISR_Cnt;   // Counter for nested StepISr-disable V3: still needed??
 
 void seizeTimerAS();
 
 static inline __attribute__((__always_inline__)) void _noStepIRQ() {
     //timer_disable_irq(MT_TIMER, TIMER_STEPCH_IRQ);
-    *bb_perip(&(MT_TIMER->regs).adv->DIER, TIMER_STEPCH_IRQ) = 0;
+    //*bb_perip(&(MT_TIMER->regs).adv->DIER, TIMER_STEPCH_IRQ) = 0;
     noStepISR_Cnt++;
-    //noInterrupts();
-    //nvic_globalirq_disable();
+    nvic_irq_disable(MT_NVIC_IRQ);  // Timer IRQ of Mobatools ( disables servo too )
     #if defined COMPILING_MOTOSTEPPER_CPP
-        //Serial.println(noStepISR_Cnt);
+        DB_PRINT("noStepIRQ, Cnt=%d", noStepISR_Cnt);
         //SET_TP4;
     #endif
 }
 static inline __attribute__((__always_inline__)) void  _stepIRQ(bool force = false) {
     //timer_enable_irq(MT_TIMER, TIMER_STEPCH_IRQ) cannot be used, because this also clears pending irq's
+    DB_PRINT("stepIRQ, Cnt=%d", noStepISR_Cnt);
     if ( force ) noStepISR_Cnt = 1;              //enable IRQ immediately
     if ( noStepISR_Cnt > 0 ) noStepISR_Cnt -= 1; // don't decrease if already 0 ( if enabling IRQ is called too often )
     if ( noStepISR_Cnt == 0 ) {
         #if defined COMPILING_MOTOSTEPPER_CPP
             //CLR_TP4;
         #endif
-        *bb_perip(&(MT_TIMER->regs).adv->DIER, TIMER_STEPCH_IRQ) = 1;
-        //nvic_globalirq_enable();
-        //interrupts();
+        //*bb_perip(&(MT_TIMER->regs).adv->DIER, TIMER_STEPCH_IRQ) = 1;
+		nvic_irq_enable(MT_NVIC_IRQ);  // Timer IRQ of Mobatools ( enables servo too )
     }
-    //Serial.println(noStepISR_Cnt);
+    DB_PRINT("stepIRQ, Cnt=%d", noStepISR_Cnt);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,6 +72,7 @@ static inline __attribute__((__always_inline__)) void enableSoftLedIsrAS() {
 
 static inline __attribute__((__always_inline__)) void enableStepperIsrAS() {
 	//SET_TP3;
+	DB_PRINT("Enable stepper ISR"); Serial.flush();
     timer_attach_interrupt(MT_TIMER,TIMER_STEPCH_IRQ, ISR_Stepper );
     timer_cc_enable(MT_TIMER, STEP_CHN);
 	//CLR_TP3;
@@ -92,7 +92,7 @@ static inline __attribute__((__always_inline__)) void initSpiAS() {
                      PIN_MAP[BOARD_SPI2_MOSI_PIN].gpio_bit);
 
     uint32 flags = (SPI_FRAME_MSB | SPI_CR1_DFF_16_BIT | SPI_SW_SLAVE | SPI_SOFT_SS);
-    spi_master_enable(SPI2, (spi_baud_rate)SPI_BAUD_PCLK_DIV_64, (spi_mode)SPI_MODE_0, flags);
+    spi_master_enable(SPI2, (spi_baud_rate)SPI_BAUD_PCLK_DIV_16, (spi_mode)SPI_MODE_0, flags);
     spi_irq_enable(SPI2, SPI_RXNE_INTERRUPT);
     pinMode( BOARD_SPI2_NSS_PIN, OUTPUT);
     digitalWrite( BOARD_SPI2_NSS_PIN, LOW );
@@ -106,7 +106,7 @@ static inline __attribute__((__always_inline__)) void initSpiAS() {
                      PIN_MAP[BOARD_SPI1_MOSI_PIN].gpio_bit);
 
     uint32 flags = (SPI_FRAME_MSB | SPI_CR1_DFF_16_BIT | SPI_SW_SLAVE | SPI_SOFT_SS);
-    spi_master_enable(SPI1, (spi_baud_rate)SPI_BAUD_PCLK_DIV_64, (spi_mode)SPI_MODE_0, flags);
+    spi_master_enable(SPI1, (spi_baud_rate)SPI_BAUD_PCLK_DIV_16, (spi_mode)SPI_MODE_0, flags);
     spi_irq_enable(SPI1, SPI_RXNE_INTERRUPT);
     pinMode( BOARD_SPI1_NSS_PIN, OUTPUT);
     digitalWrite( BOARD_SPI1_NSS_PIN, LOW );
