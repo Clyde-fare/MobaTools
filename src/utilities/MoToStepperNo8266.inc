@@ -450,6 +450,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
             //stepperDataP->cycCnt+=cyclesLastIRQ;
             stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;
             if ( stepperDataP->cycCnt >= stepperDataP->aCycSteps ) {
+				CLR_TP2;
                 stepperDataP->cycCnt = 0;
 				if ( stepperDataP->enablePin == NO_ENABLEPIN ) {
 					// set motorwires to 0 to disable the motor
@@ -460,9 +461,10 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					digitalWrite( stepperDataP->enablePin, !stepperDataP->enable );
 				}
                 stepperDataP->rampState = rampStat::STOPPED;
+				SET_TP2;
             } else {
 				SET_TP4;
-				nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)stepperDataP->aCycSteps-stepperDataP->cycCnt );
+				nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)(stepperDataP->aCycSteps-stepperDataP->cycCnt) );
 				CLR_TP4;
 			}
         }

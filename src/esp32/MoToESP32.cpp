@@ -26,13 +26,12 @@ void IRAM_ATTR ISR_Stepper(void) {
 	// next alarm ISR must be at least MIN_STEP_CYCLE/2 beyond last alarm value ( time between to ISR's )
     lastAlarm = aktAlarm;
     aktAlarm = lastAlarm+(nextCycle*TICS_PER_MICROSECOND); // minimumtime until next Interrupt
-    /*uint64_t minNextAlarm = lastAlarm + (MIN_STEP_CYCLE*TICS_PER_MICROSECOND/2);
+    uint64_t minNextAlarm = lastAlarm + (MIN_STEP_CYCLE*TICS_PER_MICROSECOND/2);
 	if ( aktAlarm < minNextAlarm ) {
 		// time till next ISR ist too short, set to mintime and adjust nextCycle
-        CLR_TP1;
+		CLR_TP3;
 		aktAlarm =  minNextAlarm;
-	}*/
-	CLR_TP3;
+	}
 	#if (ESP_ARDUINO_VERSION_MAJOR == 2)
      timerAlarmWrite(stepTimer, aktAlarm , false); // no autorelaod
      timerAlarmEnable(stepTimer);
