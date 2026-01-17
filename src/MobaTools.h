@@ -163,13 +163,8 @@
 		#define MIN_STEP_CYCLE 20       // Minimum number of µsec  per Step
 	//#endif
 #elif defined ARDUINO_ARCH_AVR ////////////////////////////////////////////////////////
-	#ifdef  ARDUINO_AVR_LARDU_328E
-		// Timer3 of LGT8Fx is incompatible with MobaTools
-		#define NO_TIMER3
-	#endif
 	//#define NO_TIMER3             // never use Timer 3
-	#define CYCLETIME       200     // Min. irq-periode in us ( default is 200 ), 
-	#define MIN_STEP_CYCLE  2       // Minimum number of cycles per step. 
+	//#define CYCLETIME       200   // Min. irq-periode in us ( default is 200 or 100 for LGT8Fx with 32MHz), 
 	#define FASTSPI                 // only for devices with USI Interface ( instead of SPI HW )
 									// if defined SPI clock ist CPU clock / 2
 									// if not defined, SPI clock ist CPU clock / 4
@@ -243,20 +238,6 @@
 //  !!!!!!!!!!!!  Don't change anything after tis line !!!!!!!!!!!!!!!!!!!!
  
 #include <utilities/MoToBase.h>
-#include <utilities/MoToStepper.h>
-#ifndef ARDUINO_ARCH_ESP8266
-// synced moves are not possible at ESP8266
-#include <utilities/MoToSyncStepper.h>
-#endif
-#include <utilities/MoToServo.h>
-#include <utilities/MoToSoftled.h>
-#include <utilities/MoToPwm.h>
-
-#include <utilities/MoToDbg.h>
-
-#ifdef ARCHITECT_INCLUDE		// Defined in MoToBase.h if MCU-specific includes are required.
-#include ARCHITECT_INCLUDE
-#endif
 
 
 #include <MoToButtons.h>

@@ -118,7 +118,7 @@ void MoToStepper::initialize ( long steps360, uint8_t mode ) {
     *tmpPP = &_stepperData;
 	#endif
     if( _stepperCount++ >= MAX_STEPPER )  {
-        stepMode = NOSTEP;      // invalid instance ( too mach objects )
+        stepMode = NOSTEP;      // invalid instance ( too much objects )
     }
     
 }

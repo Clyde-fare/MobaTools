@@ -70,8 +70,11 @@ void seizeTimerAS() {
         cli();
         
         TCCRxA =0; // Normal Mode TOP is 0xFFFF
-        TCCRxB = _BV(CS11) // div 8 clock prescaler 
-      ;
+		#if F_CPU == 32000000 // this is only possible with LGT8Fx
+		TCCRxB = _BV(CS11)|_BV(CS10); // div 64 clock prescaler 
+		#else
+        TCCRxB = _BV(CS11); // div 8 clock prescaler 
+		#endif
 	  
         //ICRx = TIMERPERIODE * TICS_PER_MICROSECOND;  // timer periode is 20000us 
         OCRxA = FIRST_PULSE;

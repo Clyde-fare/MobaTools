@@ -1,7 +1,7 @@
 #ifndef MOTODEBUG_H
 #define MOTODEBUG_H
 
-#define MESSAGES 0  // Level of #pragma messages to output ( 0 = no messages )
+#define MESSAGES 2  // Level of #pragma messages to output ( 0 = no messages )
 
 // die folgenden defines werden im aufrufenden cpp-File gesetzt.
 // so können die debugs klassenspezifisch eingeschaltet werden

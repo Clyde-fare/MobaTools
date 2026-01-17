@@ -6,10 +6,28 @@
 #define IRAM_ATTR       // delete in .cpp files, because it has no meaning for AVR processors
 #define DRAM_ATTR
 
+#ifdef  ARDUINO_AVR_LARDU_328E
+	// Timer3 of LGT8Fx is incompatible with MobaTools
+	#define NO_TIMER3
+#endif
+#ifndef CYCLETIME
+	// set default cycletime
+	#if F_CPU == 32000000  // LGT8Fx with 32MHz
+	#define CYCLETIME       100
+	#else
+	#define CYCLETIME       200
+	#endif
+#endif
+#define MIN_STEP_CYCLE  2       // Minimum number of cycles per step. 
+
 
 #define FAST_PORTWRT        // if this is defined, ports are written directly in IRQ-Routines,
                             // not with 'digitalWrite' functions
-#define TICS_PER_MICROSECOND (clockCyclesPerMicrosecond() / 8 ) // prescaler is 8 = 0.5us
+#if F_CPU == 32000000		// this is only possible with LGT8Fx
+#define TICS_PER_MICROSECOND (F_CPU / 1000000.0 / 64 ) // prescaler is 64 = 2µs 
+#else
+#define TICS_PER_MICROSECOND (F_CPU / 1000000 / 8 ) // prescaler is 8 = 0.5us or 1µs with 8MHz
+#endif
 
 // check supported AVR Processors
 // we need a 16-Bit timer (TCNT1 or TCNT3) and an SPI or USI HW

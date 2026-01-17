@@ -96,6 +96,22 @@ typedef struct {    // portaddress and bitmask for direkt pin set/reset ( only u
    volatile uint8_t Mask;
 } portBits_t;
 
+// Include class specific .h files
+#include <utilities/MoToStepper.h>
+#ifndef ARDUINO_ARCH_ESP8266
+// synced moves are not possible at ESP8266
+#include <utilities/MoToSyncStepper.h>
+#endif
+#include <utilities/MoToServo.h>
+#include <utilities/MoToSoftled.h>
+#include <utilities/MoToPwm.h>
+
+#include <utilities/MoToDbg.h>
+
+#ifdef ARCHITECT_INCLUDE		// Defined in MoToBase.h if MCU-specific includes are required.
+#include ARCHITECT_INCLUDE
+#endif
+
 
 #endif
 
