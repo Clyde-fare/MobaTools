@@ -3,6 +3,16 @@
 #ifndef ESP8266_DRIVER_H
 #define ESP8266_DRIVER_H
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv ESP8266 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+#ifndef CYCLETIME
+	#define CYCLETIME       60      // Min. irq-periode in us ( ESP-default is 60 )
+#endif									// = high time of Steppulse
+#define MIN_STEP_CYCLE  2       // Minimum number of cycles per step. 
+								// = min low time of steppulse is CYCLETIME
+#define MAX_GPIO        10      // max number of usable gpios
+// at max 10 gpio's can be used at an ESP12: gpio 0,1,2,3,4,5,12,13,14,15
+// gpio 6-10 is internally used for flash
+// gpio16 has no interrupt capability ( but can be used as dir-pin for a stepper)
+
 #define IS_32BIT
 #define IS_ESP  8266
 #include <esp8266/ESP8266_waveform.h>

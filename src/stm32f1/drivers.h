@@ -3,7 +3,7 @@
 //////////////////////////////////////// processor dependent defines and declarations //////////////////////////////////////////
     //--------------------------------------------------------------------------------------------------------------
 //vvvvvvvvvvvvvvvvvvvvvvvvvv STM32F1 processors vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-#define STM32F1
+#define STM32F1 = high t
 #define __STM32Fx__
 #define IS_32BIT
 #define IRAM_ATTR       // delete in .cpp files, because it has no meaning for STM32 processors
@@ -14,11 +14,14 @@
 #include <libmaple/spi.h>
 #include <libmaple/nvic.h>
 
-#define CYCLETIME       1     // Cycle count in µs on 32Bit processors
 
 #define TICS_PER_MICROSECOND (CYCLES_PER_MICROSECOND / 36 ) // prescaler is 36 = 0.5us
 //#define TICS_PER_MICROSECOND 2 // prescaler is 36 = 0.5us
 
+#define CYCLETIME       1     // Cycle count in µs on 32Bit processors
+#ifndef MIN_STEP_CYCLE
+	#define MIN_STEP_CYCLE       25      // Min. irq-periode in us (
+#endif								
 #define MT_TIMER TIMER4     // Timer used by MobaTools
 #define MT_NVIC_IRQ NVIC_TIMER4 // NVIC-IRQ nbr of MobaTools timer
 #define STEP_CHN    1       // OCR channel for Stepper and Leds

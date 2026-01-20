@@ -12,6 +12,12 @@
 
 
 #define CYCLETIME       1     // Cycle count in µs on 32Bit processors
+#ifndef MIN_STEP_CYCLE
+#define MIN_STEP_CYCLE  50       // Minimum number of µsec  per Step
+#endif
+#define IRQ_PRIO 12				// NVIC priority. Servo irq is always one prio higher.
+								// Lower priority ( higher value) will lead to problems on R4 WiFi 
+								// with WiFi active
 
 #define TICS_PER_MICROSECOND (clockCyclesPerMicrosecond() / 16 ) // prescaler is 16 = 0.33us
 //#define TICS_PER_MICROSECOND 3 // prescaler is 16 = with 48MHz Clock

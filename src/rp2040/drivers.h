@@ -19,10 +19,13 @@
 #define softledISR __not_in_flash_func(softledISR) // softledISR must be executed in RAM
                                                   // this is only for defining the function. in .cpp
                                                   // where it is called, it must be undef'd
-
-#if ( F_CPU != 150000000L )
-  #undef STP_TIMR_NBR
-  #define STP_TIMR_NBR 0         // is obviousl not RP2350, so only timer 0 present
+#ifndef STP_TIMR_NBR
+  #define STP_TIMR_NBR 0         // default timer for pico and pico2
+#else 
+	#ifdef  ARDUINO_RASPBERRY_PI_PICO // It's not a PICO_2
+	  #undef STP_TIMR_NBR
+	  #define STP_TIMR_NBR 0         // is obviousl not RP2350, so only timer 0 present
+	#endif
 #endif
 
 #include <pico/stdlib.h>		// RP2040 SDK
@@ -33,6 +36,12 @@
 #include <hardware/pwm.h>
 
 #define CYCLETIME       1     // Cycle count in µs on 32Bit processors
+#ifndef MIN_STEP_CYCLE
+	#define MIN_STEP_CYCLE 20       // Minimum number of µsec  per Step
+#endif
+#define IRQ_PRIO 64				// NVIC priority of timer IRQ ( stepper&softleds) - 128 is default for SDK
+								// lower value = higher priority
+#define SPI_CLOCK 2000000L
 #define TICS_PER_MICROSECOND 1 // RP2040 timer is clocked with 1MHz
 #define WITH_PRINTF           // Core supports printf command
 

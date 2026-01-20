@@ -10,6 +10,21 @@
 #define MOTOSOFTLED32    // use 32-bit version of SoftLed class
 
 #define CYCLETIME       1     // Cycle count is µs on 32Bit processors
+#ifndef MIN_STEP_CYCLE
+	#define MIN_STEP_CYCLE  50       // Minimum number of µsec  per Step
+#endif
+	#define FAST_STEPRESET	1		// reset the step impulseat End of IRQ ( pulse may be short!!)
+	#define IRQ_PRIO 3				// NVIC priority. There are only 4 different level (0...3)
+									// Lower priority = higher value
+									// with WiFi active
+#ifndef MT_TIMER
+	#define MT_TIMER 5			// Timer used by MobaTools ( 3,4,5 selecting TC3, TC4 or TC5  is possible)
+								// TC5 is default if the number is invalid or not set
+								// Be aware that always two timer ( TCC2/TC3 and TC4/TC5 ) share a common clock source
+#endif
+#ifndef PIN_SPI_SS
+#define PIN_SPI_SS 10		// Selct pin for SPI - if not defined in core files
+#endif
 
 // At Samd the internal 8MHz clock is used for the timers. Timer-Prescaler is 4 so 0,5µs per tic
 #define TICS_PER_MICROSECOND 2  

@@ -1,4 +1,4 @@
-// ESP32 HW-specific parts for MobaTools
+// ESP32Sx HW-specific parts for MobaTools
     //--------------------------------------------------------------------------------------------------------------
 #ifndef ESP32S3_DRIVER_H
 #define ESP32S3_DRIVER_H
@@ -46,6 +46,9 @@ struct timerConfig_t {
   };
 } ;
 extern bool timerInitialized;
+#ifndef MIN_STEP_CYCLE
+	#define MIN_STEP_CYCLE       20      // Min. irq-periode in us (
+#endif								
 #define CYCLETIME       1                   // Cycle count in µs on 32Bit processors
 // Prescaler for 64-Bit Timer ( input is 
 #define DIVIDER     APB_CLK_FREQ/2/1000000  // 0,5µs Timertic ( 80MHz input freq )

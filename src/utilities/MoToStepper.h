@@ -42,9 +42,8 @@ enum outArg_t {
 #define INV_PIN4 0x08									
 
 
-// #define CYCLETICS       (CYCLETIME*TICS_PER_MICROSECOND)
 constexpr uint16_t CYCLETICS   =  (CYCLETIME*TICS_PER_MICROSECOND);
-#define MIN_START_CYCLES 4000/CYCLETIME  // 5ms min until first step if stepper is in stop
+#define MIN_START_CYCLES 4000/CYCLETIME  // 5ms min until first step if stepper is in stop V3: no longer used
 #define MIN_STEPTIME    (CYCLETIME * MIN_STEP_CYCLE) 
 #ifdef IS_32BIT
 #define MAXRAMPLEN      160000 

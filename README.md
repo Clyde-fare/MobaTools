@@ -33,11 +33,12 @@ A documentation file in [german](https://github.com/MicroBahner/MobaTools/blob/m
 | | | old classnames from V1.x are no longer valid
 | | | Support of SamD21 MCU (MKR-Series, Nano 33 Iot ...)
 | | | Support of Arduino Nano ESP32 (ESP32S3) and variants(C3,S3,S2)
+| | | support of LGT8F328 with 32MHz
 | | | MoToStepper:
-| | | >Setting SPI-pins for SPI-driven steppers on ESP32 boards in attach()
-| | | >The stepper pins can be configured to output the signal inverted (individually for each pin).
-| | | >Synced stepper move with acceleration and deceleration
-| | | >In FULLSTEP 2-pin output is possible
+| | |     >Setting SPI-pins for SPI-driven steppers on ESP32 boards in attach()
+| | |     >The stepper pins can be configured to output the signal inverted (individually for each pin).
+| | |     >Synchronos move of steppers with acceleration and deceleration
+| | |     >In FULLSTEP 2-pin output is possible
 | | | some bugfixes and internal enhancements
 | 2.7.0 | 2025-03-05| several bugfixes, some docu enhancements
 | | | Support of RP2040 / RP2350
