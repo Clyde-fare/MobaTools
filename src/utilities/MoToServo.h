@@ -78,7 +78,7 @@ struct servoData_t {
 class MoToServo
 {
   private:
-    int16_t _lastPos;     // startingpoint of movement
+    uint16_t _lastPos;     // startingpoint of movement
     //uint8_t pin;
     //uint8_t _angle;       // in degrees
     uint16_t _minPw;       // minimum pulse, uS units  

@@ -561,7 +561,7 @@ void MoToServo::setSpeed( uint16_t speed ) {
 uint8_t MoToServo::read() {
     // get position in degrees
     if ( _servoData.pwmNbr == NOT_ATTACHED ) return -1; // Servo not attached
-    return map( readMicroseconds(), _minPw, _maxPw, 0, 180 );
+    return (map( readMicroseconds(), _minPw, _maxPw, 0, 1800 )+5)/10;
 }
 
 uint16_t MoToServo::readMicroseconds() {
@@ -580,10 +580,11 @@ uint8_t MoToServo::moving() {
     // return how much still to move (percentage)
     if ( _servoData.pwmNbr == NOT_ATTACHED ) return 0; // Servo not attached
     long total , remaining;
-    total = abs( _lastPos - _servoData.soll );
+    total = abs( (long)_lastPos - (long)_servoData.soll );
     noInterrupts(); // disable interrupt, because integer _servoData.ist is changed in interrupt
-    remaining = abs( _servoData.soll - _servoData.ist );
+    remaining = abs( (long)_servoData.soll - (long)_servoData.ist );
     interrupts();  // allow interrupts again
+	DB_PRINT("total=%ld, remain=%ld, lastPos=%d, soll=%d, ist=%d", total,remaining,_lastPos,_servoData.soll, _servoData.ist); 
     if ( remaining == 0 ) return 0;
     return ( remaining * 100 ) /  total +1;
 }
