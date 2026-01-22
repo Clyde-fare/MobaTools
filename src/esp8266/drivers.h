@@ -15,6 +15,8 @@
 
 #define IS_32BIT
 #define IS_ESP  8266
+#define NO_SPISTEPPER
+
 #include <esp8266/ESP8266_waveform.h>
 //on ESP8266 all values are in µsec
 #define TICS_PER_MICROSECOND 1

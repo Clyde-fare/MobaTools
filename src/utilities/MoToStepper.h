@@ -24,7 +24,8 @@ enum outArg_t {
 #ifndef ESP8266
 	SINGLE_PINS2	= 2	,	// don't change this number
 	SINGLE_PINS4	= 4	,	// don't change this number
-
+#endif
+#ifndef NO_SPISTEPPER
 	SPI_1			= 5	,	// The numbers for SPI_1...SPI_4 must be in direct sequence
 	SPI_2 ,
 	SPI_3 ,

@@ -209,7 +209,7 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
 	#endif
     uint8_t attachOK = true;
     switch ( outArg ) {
-	  #ifndef ESP8266
+	  #ifndef NO_SPISTEPPER
       case SPI_1:
       case SPI_2:
       case SPI_3:
