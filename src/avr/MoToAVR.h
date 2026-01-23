@@ -107,6 +107,7 @@ extern uint8_t bitSS;;
              | (0<<CPOL)    // Clock is low when idle
              | (0<<CPHA)    // Data is sampled on leading edge
              | (0<<SPR1) | (1<<SPR0);    // fosc/16
+		SPSR = (1<<SPI2X);	// double SPI-Clock ( now fosc/8 )
         //digitalWrite( SS, HIGH );
         SET_SS;
         SREG = oldSREG;  // undo cli() 
@@ -118,6 +119,13 @@ extern uint8_t bitSS;;
         CLR_SS;
         spiByteCount = 0;
         SPDR = spiData[1];
+	#ifdef  ARDUINO_AVR_LARDU_328E // ISR for LGT8Fx
+		// because there is a buffer, we can write both bytes ..
+		while( SPFR & (1<<WREMPT) );
+		SPDR = spiData[0];
+		//while( SPFR & (1<<WREMPT) );
+		SPCR |= (1<<SPIE);    // Interrupt enable
+	#endif
     }    
     
     

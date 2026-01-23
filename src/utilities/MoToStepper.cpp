@@ -159,7 +159,7 @@ uint8_t MoToStepper::attach( uint8_t stepP, uint8_t dirP, uint8_t invFlg ) { //#
 	#endif
 		return MoToStepper::attach(STEPDIR_PINS , pins );
 }
-#ifndef ESP8266
+#ifndef ESP8266  // no 4 or 2Pin Mode with ESP8266
 uint8_t MoToStepper::attach( uint8_t pin1, uint8_t pin2, uint8_t pin3, uint8_t pin4, uint8_t invFlg ) {
     byte pins[4];
     pins[0] = abs(pin1);
@@ -169,6 +169,7 @@ uint8_t MoToStepper::attach( uint8_t pin1, uint8_t pin2, uint8_t pin3, uint8_t p
 	_stepperData.invFlg = invFlg;
     return MoToStepper::attach( SINGLE_PINS4, pins );
 }
+#endif // no ESP8266
 
 #ifdef ARDUINO_ARCH_ESP32
 uint8_t MoToStepper::attach( outArg_t outArg, byte ccPin, byte clkPin, byte MosiPin ) {
@@ -182,14 +183,15 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte ccPin, byte clkPin, byte Mosi
     pins[3] = 0;
     return MoToStepper::attach( outArg, pins );
 }
-#endif
+#endif // is ESP32
 
+#ifndef NO_SPISTEPPER // with SPI Stepper
 uint8_t MoToStepper::attach(outArg_t outArg) {
 	// SPI-attach without pin-definitions
 	if ( outArg < SPI_1 ) return 0; // wrong mode
     return MoToStepper::attach( outArg, (byte *)NULL );
 }
-#endif
+#endif // with SPI Stepper
     
 uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
     MODE_TP1;       // activate debug-pins

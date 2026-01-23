@@ -9,8 +9,10 @@
 #ifdef  ARDUINO_AVR_LARDU_328E
 	// Timer3 of LGT8Fx is incompatible with MobaTools
 	#define NO_TIMER3
-	#define NO_SPISTEPPER	// SPI HW behaves differently to AVR 
-	//#pragma message "No SPI Stepper"
+	//#define NO_SPISTEPPER	// SPI HW behaves differently to AVR 
+	#if MESSAGES > 0  
+	#pragma message "LGT8Fx selected"
+	#endif
 #endif
 #ifndef CYCLETIME
 	// set default cycletime

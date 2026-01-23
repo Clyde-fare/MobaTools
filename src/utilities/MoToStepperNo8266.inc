@@ -17,6 +17,7 @@ bool IRAM_ATTR setStepperPins( stepperData_t *stepperDataP, uint8_t stepPattern 
 	// store pattern data
 	bool spiChanged = false;
 	switch ( stepperDataP->output ) {
+	#ifndef NO_SPISTEPPER  // with SPI Stepper
 		// V2.6: PIN8_11/PIN4_7 not allowed anymore ( wasn't described in Doku since V0.8
 	  case SPI_1:
 		//SET_TP2;
@@ -40,7 +41,8 @@ bool IRAM_ATTR setStepperPins( stepperData_t *stepperDataP, uint8_t stepPattern 
 	#ifdef ESP32 // !!! Auf ESP32 darf ein switch in ISR max 4 case-Blöcke enthalten !!!!
 	}
 	switch ( stepperDataP->output ) {
-	#endif
+	#endif // if ESP32
+	#endif // with SPI Steppers
 	  case SINGLE_PINS2 : // Outpins are individually defined
 	  case SINGLE_PINS4 : // Outpins are individually defined
 		for ( uint8_t bitNr = 0; bitNr < stepperDataP->output; bitNr++ ) {
@@ -133,7 +135,9 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 #ifdef __AVR_MEGA__
                 noInterrupts(); // because of read modify write actions in setting outputs
                 #endif
+				
                 switch ( stepperDataP->output ) {
+				#ifndef NO_SPISTEPPER  // with SPI Stepper
 					// V2.6: PIN8_11/PIN4_7 not allowed anymore ( wasn't described in Doku since V0.8
                   case SPI_1:
                     //SET_TP2;
@@ -158,6 +162,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 }
                 switch ( stepperDataP->output ) {
                 #endif
+                #endif // with SPI Stepper
                   case SINGLE_PINS2 : // Outpins are individually defined
                   case SINGLE_PINS4 : // Outpins are individually defined
                     changedPins = stepPattern[ _patIx ] ^ stepperDataP->lastPattern;
@@ -450,7 +455,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
             //stepperDataP->cycCnt+=cyclesLastIRQ;
             stepperDataP->cycCnt=stepperDataP->cycCnt+cyclesLastIRQ;
             if ( stepperDataP->cycCnt >= stepperDataP->aCycSteps ) {
-				CLR_TP2;
+				//CLR_TP2;
                 stepperDataP->cycCnt = 0;
 				if ( stepperDataP->enablePin == NO_ENABLEPIN ) {
 					// set motorwires to 0 to disable the motor
@@ -463,14 +468,14 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
                 stepperDataP->rampState = rampStat::STOPPED;
 				SET_TP2;
             } else {
-				SET_TP4;
+				//SET_TP4;
 				nextCycle = (nextCycle_t)min ( (uintxx_t)nextCycle, (uintxx_t)(stepperDataP->aCycSteps-stepperDataP->cycCnt) );
-				CLR_TP4;
+				//CLR_TP4;
 			}
         }
 
         stepperDataP = stepperDataP->nextStepperDataP;
-        //SET_TP1; //CLR_TP2;
+        //SET_TP1; CLR_TP2;
     } // end of stepper-loop
     
     // shift out spiStepperData, if SPI is active

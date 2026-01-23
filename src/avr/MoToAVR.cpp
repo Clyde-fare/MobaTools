@@ -22,17 +22,17 @@ ISR ( TIMERx_COMPB_vect) {
     // 26-09-15 An Interrupt is only created at timeslices, where data is to output
     SET_TP1;
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
-	//CLR_TP1;
+	CLR_TP1;
     if ( stepperISR ) stepperISR(cyclesLastIRQ);
     //============  End of steppermotor ======================================
    if ( softledISR ) softledISR(cyclesLastIRQ);
     // ======================= end of softleds =====================================
     // set compareregister to next interrupt time;
     // compute next IRQ-Time in us, not in tics, so we don't need long
-    noInterrupts(); // when manipulating 16bit Timerregisters IRQ must be disabled
 	SET_TP1;
+    noInterrupts(); // when manipulating 16bit Timerregisters IRQ must be disabled
     if ( nextCycle == 1 )  {
-        //CLR_TP1;
+        CLR_TP1;
         // this is timecritical: Was the ISR running longer then CYCELTIME?
         // compute length of current IRQ ( which startet at OCRxB )
         // we assume a max. runtime of 1000 Tics ( = 500µs , what nevver should happen )
@@ -48,14 +48,16 @@ ISR ( TIMERx_COMPB_vect) {
         }
         //OCRxB = ( tmp > TIMER_OVL_TICS ) ? tmp -= TIMER_OVL_TICS : tmp ;
 		OCRxB = tmp;
-        //SET_TP1;
+        SET_TP1;
     } else {
+		SET_TP2;
         // time till next IRQ is more then one cycletime
         // NOT REQUIRED compute next IRQ-Time in us, not in tics, so we don't need long
         //tmp = ( OCRxB / TICS_PER_MICROSECOND + nextCycle * CYCLETIME );
         //if ( tmp > TIMERPERIODE ) tmp = tmp - TIMERPERIODE;
         //OCRxB = tmp * TICS_PER_MICROSECOND;
 		OCRxB = OCRxB + nextCycle * CYCLETIME*TICS_PER_MICROSECOND;
+		CLR_TP2;
     }
     interrupts();
     cyclesLastIRQ = nextCycle;
@@ -95,8 +97,29 @@ extern uint8_t spiByteCount;
 
 #ifdef SPCR
 // use an ISR only if we have a 'real' SPI Hardware
+volatile byte received; // Dummy to clear SPIF
 ISR ( SPI_STC_vect ) { 
-    //SET_TP4;
+#ifdef  ARDUINO_AVR_LARDU_328E // ISR for LGT8Fx
+    SET_TP4;
+	// Check type of interrupt (  tansfer complete )
+	if ( SPSR & (1<<SPIF) ) {
+		// Interruptflag is not cleared - this can only be possible if sendbuffer
+		// is empty ( transfer finished )
+		if ( SPFR & (1<<WREMPT) ){
+			SET_TP3;
+			// Data is send completely
+			SET_SS;
+			spiByteCount = 0;
+			SPCR &= ~(1<<SPIE);    // Interrupt disable
+			CLR_TP3;
+		} 
+		received = SPDR;
+
+	}
+    CLR_TP4;
+
+#else  // ISR for AVR ATMega
+    SET_TP4;
     // output step-pattern on SPI, set SS when ready
     if ( spiByteCount++ == 0 ) {
         // end of shifting out high Byte, shift out low Byte
@@ -107,8 +130,8 @@ ISR ( SPI_STC_vect ) {
         SET_SS;
         spiByteCount = 0;
     }
-    //CLR_TP4;
-    
+    CLR_TP4;
+#endif    
 }
 #endif
 
