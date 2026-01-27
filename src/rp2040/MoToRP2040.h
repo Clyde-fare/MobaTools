@@ -3,7 +3,7 @@
 // RP2040 specific defines for Cpp files
 
 #if MESSAGES > 0
-#pragma message RP2040 specific cpp includes
+#pragma "message RP2040 specific cpp includes"
 #endif
 
 bool seizeTimerAS();

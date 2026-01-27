@@ -1,7 +1,7 @@
 #ifndef MOTODEBUG_H
 #define MOTODEBUG_H
 
-#define MESSAGES 0  // Level of #pragma messages to output ( 0 = no messages )
+#define MESSAGES 2  // Level of #pragma messages to output ( 0 = no messages )
 
 // die folgenden defines werden im aufrufenden cpp-File gesetzt.
 // so können die debugs klassenspezifisch eingeschaltet werden
@@ -196,7 +196,7 @@
         #define CLR_TP4  R_IOPORT_PinWrite(NULL, TP4, BSP_IO_LEVEL_LOW) 
 	
     #elif defined ARDUINO_ARCH_RP2040
-		#warning "RP2040 TP aktiv"
+		#pragma message "RP2040 TP aktiv"
         #define TP1 A0//20
         #define TP2 A1//21
         #define TP3 22
@@ -230,7 +230,7 @@
         #define CLR_TP4
  
 	#else // processor not known
-		//#warning "no testpins - processor unknown"
+		#pragma message  "no testpins - processor unknown"
         #define MODE_TP1
         #define SET_TP1
         #define CLR_TP1

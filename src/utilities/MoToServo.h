@@ -61,9 +61,9 @@ struct servoData_t {
   uint8_t on   :1 ;     // True: create pulse
   uint8_t noAutoff :1;  // don't switch pulses off automatically
                         // on ESP32 'soll' 'ist' and 'inc' are in duty values (  0... DUTY100 )
-  uint16_t soll;             // Target position that the servo should move to ( in increments ). 0: not initialized
-  volatile uint16_t ist;     // actual Position of the servo ( increments )
-  uint16_t inc;              // Schrittweite je Zyklus um Ist an Soll anzugleichen( in Tics )
+  servoPos_t soll;             // Target position that the servo should move to ( in increments ). 0: not initialized
+  volatile servoPos_t ist;     // actual Position of the servo ( increments )
+  servoPos_t inc;              // Schrittweite je Zyklus um Ist an Soll anzugleichen( in Tics )
   uint8_t offcnt;       // counter to switch off pulses if length doesn't change
   #ifdef FAST_PORTWRT
   volatile uint8_t* portAdr;     // port adress related to pin number

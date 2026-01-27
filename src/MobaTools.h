@@ -77,6 +77,7 @@
 
 /////////////////////SamD MCU, MKR-Series, Nano 33 IoT ...   ///////////////////////////////
 #elif defined ARDUINO_ARCH_SAMD 
+	//#define SPI_SS_PIN 11		// to overwrite the default
 	//define MIN_STEP_CYCLE  50       // Minimum number of µsec  per Step ( 50=default )
 	//#define MT_TIMER 5			// Timer used by MobaTools ( 3,4,5 selecting TC3, TC4 or TC5  is possible)
 								// TC5 is default if the number is invalid or not set

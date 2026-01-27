@@ -54,6 +54,11 @@
 // Calling compatible architecture specific functions.
 // These functions are defined in architecture specific files, but can be called independend from actual architecture
 
+// type definitions for the Servo class.
+#ifndef servoPos_t
+	// special definitions ( e.g. for special PWM HW ) are defined in MCU specific drivers.h
+	#define servoPos_t uint16_t // default fo rmost boards ( timing with 16-bit timer )
+#endif
 // type definitions ( if they are different for 8bit and 32bit platforms)
 #ifdef IS_32BIT
 	#define uintxx_t uint32_t

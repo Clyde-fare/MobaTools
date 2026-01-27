@@ -584,7 +584,7 @@ uint8_t MoToServo::moving() {
     noInterrupts(); // disable interrupt, because integer _servoData.ist is changed in interrupt
     remaining = abs( (long)_servoData.soll - (long)_servoData.ist );
     interrupts();  // allow interrupts again
-	DB_PRINT("total=%ld, remain=%ld, lastPos=%d, soll=%d, ist=%d", total,remaining,_lastPos,_servoData.soll, _servoData.ist); 
+	//DB_PRINT("total=%ld, remain=%ld, lastPos=%d, soll=%d, ist=%d", total,remaining,_lastPos,_servoData.soll, _servoData.ist); 
     if ( remaining == 0 ) return 0;
     return ( remaining * 100 ) /  total +1;
 }

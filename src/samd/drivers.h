@@ -22,10 +22,14 @@
 								// TC5 is default if the number is invalid or not set
 								// Be aware that always two timer ( TCC2/TC3 and TC4/TC5 ) share a common clock source
 #endif
-#ifndef PIN_SPI_SS
-#define PIN_SPI_SS 10		// Selct pin for SPI - if not defined in core files
+#ifdef SPI_SS_PIN		// if defined in MobaTools.h
+	#undef PIN_SPI_SS
+	#define PIN_SPI_SS  SPI_SS_PIN
+#else
+	#ifndef PIN_SPI_SS
+	#define PIN_SPI_SS 10		// Select a default pin for SPI - if not defined in core files
+	#endif
 #endif
-
 // At Samd the internal 8MHz clock is used for the timers. Timer-Prescaler is 4 so 0,5µs per tic
 #define TICS_PER_MICROSECOND 2  
 

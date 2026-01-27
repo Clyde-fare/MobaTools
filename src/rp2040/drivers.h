@@ -45,6 +45,9 @@
 #define TICS_PER_MICROSECOND 1 // RP2040 timer is clocked with 1MHz
 #define WITH_PRINTF           // Core supports printf command
 
+// define for MoToServo
+#define servoPos_t int
+
 // Definition of used  Hw und IRQ's ( Timer/PWM/SPI )
 // by default MoToStepper uses alarm 4 of timer 1
 const uint8_t stepTIMER = 0; 		// RP2040 has only timer 0, maybe set to 1 on RP2350
