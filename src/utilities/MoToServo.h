@@ -56,14 +56,12 @@ Pulse length are always stored in inc. Only when creating the real pulse ( in IR
 
 // global servo data ( used in ISR )
 struct servoData_t {
+  #ifndef IS_ESP // ESP8266 und ESP32 don't have a Servo chain
   struct servoData_t* prevServoDataP;
+  #endif
   uint8_t servoIx :6 ;  // Servo number. On ESP32 this is also the nuber of  the PWM timer
   uint8_t on   :1 ;     // True: create pulse
   uint8_t noAutoff :1;  // don't switch pulses off automatically
-                        // on ESP32 'soll' 'ist' and 'inc' are in duty values (  0... DUTY100 )
-  servoPos_t soll;             // Target position that the servo should move to ( in increments ). 0: not initialized
-  volatile servoPos_t ist;     // actual Position of the servo ( increments )
-  servoPos_t inc;              // Schrittweite je Zyklus um Ist an Soll anzugleichen( in Tics )
   uint8_t offcnt;       // counter to switch off pulses if length doesn't change
   #ifdef FAST_PORTWRT
   volatile uint8_t* portAdr;     // port adress related to pin number
@@ -72,15 +70,18 @@ struct servoData_t {
   uint8_t pin     ;     // pin
   int8_t pwmNbr;        // pwm channel on ESP32 , -1 means not attached on all platforms
 						// on RP2040 its slice_nmbr+channel ( channel 0/1 in LSB )
+                        // on ESP32 'soll' 'ist' and 'inc' are in duty values (  0... DUTY100 )
+  servoPos_t soll;             // Target position that the servo should move to ( in increments ). 0: not initialized
+  volatile servoPos_t ist;     // actual Position of the servo ( increments )
+  servoPos_t inc;              // Schrittweite je Zyklus um Ist an Soll anzugleichen( in Tics )
+  volatile uint32_t dummy;
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 class MoToServo
 {
   private:
-    uint16_t _lastPos;     // startingpoint of movement
-    //uint8_t pin;
-    //uint8_t _angle;       // in degrees
+    servoPos_t _lastPos;     // startingpoint of movement
     uint16_t _minPw;       // minimum pulse, uS units  
     uint16_t _maxPw;       // maximum pulse, uS units
     servoData_t _servoData;  // Servo data to be used in ISR
@@ -115,6 +116,9 @@ class MoToServo
     uint8_t attached();
     void setMinimumPulse(uint16_t);  // pulse length for 0 degrees in microseconds, 700uS default
     void setMaximumPulse(uint16_t);  // pulse length for 180 degrees in microseconds, 2300uS default
+	
+ // only for debugging
+	void varAdr();
 };
 
 #endif

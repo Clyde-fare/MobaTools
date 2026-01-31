@@ -69,6 +69,8 @@ void seizeTimer1();
     #undef noInterrupts
     #define interrupts()    portEXIT_CRITICAL(&servoMux);
     #define noInterrupts()  portENTER_CRITICAL(&servoMux);
+	// define for MoToServo
+	#define servoPos_t int32_t
 #endif
 #ifdef COMPILING_MOTOSOFTLED_CPP
     //#warning compiling softled.cpp for ESP32
@@ -116,7 +118,8 @@ int8_t freePwmNbr( uint8_t pwmNbr );
 #define SOFTLED_FREQ    100
 #define LEDC_BITS  18          // bitresolution for duty cycle of servos and softleds
 								// one timertic is 0.07629 µs for servos
-#define INC_PER_MICROSECOND 13 // ~ 1/0.07629 µs
+//#define INC_PER_MICROSECOND 13 // ~ 1/0.07629 µs
+#define INC_PER_MICROSECOND 8
 #define SERVO_CYCLE ( 1000000L / SERVO_FREQ ) // Servo cycle in uS
 #define SOFTLED_CYCLE ( 1000000L / SOFTLED_FREQ ) // softled cycle in uS
 #define DUTY100     ( 1<<(LEDC_BITS) )

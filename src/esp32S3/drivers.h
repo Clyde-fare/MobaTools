@@ -73,6 +73,8 @@ void seizeTimer1();		// überflüssig?? - wird wohl nicht mehr gebraucht
     #undef noInterrupts
     #define interrupts()    portEXIT_CRITICAL(&servoMux);
     #define noInterrupts()  portENTER_CRITICAL(&servoMux);
+	// define for MoToServo
+	#define servoPos_t int32_t
 #endif
 #ifdef COMPILING_MOTOSOFTLED_CPP
     //#warning compiling softled.cpp for ESP32

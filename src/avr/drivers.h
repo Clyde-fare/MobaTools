@@ -10,14 +10,14 @@
 	// Timer3 of LGT8Fx is incompatible with MobaTools
 	#define NO_TIMER3
 	#ifndef SPFR // LGT8F specific SPI reg
-		#error "This board is not supported
+		#error "This board is not supported"
 	#endif
 	//#define NO_SPISTEPPER	// SPI HW behaves differently to AVR 
 	#if MESSAGES > 0  
 	#pragma message "LGT8Fx selected"
 	#endif
 #elif defined ARDUINO_AVR_LARDU_88DS20
-	#error "This board is not supported
+	#error "This board is not supported"
 #endif
 #ifndef CYCLETIME
 	// set default cycletime

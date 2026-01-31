@@ -41,7 +41,8 @@ static inline __attribute__((__always_inline__)) int8_t servoPwmSetup( servoData
 static inline __attribute__((__always_inline__)) void startServoPulse( servoData_t *servoDataP, uint32_t pulseWidth ) {
     setPwmPin( servoDataP->pwmNbr );
     setPwmDuty( servoDataP->pwmNbr, pulseWidth );
-    attachInterruptArg( servoDataP->pin, ISR_Servo, servoDataP, FALLING );
+ 	DB_PRINT("-----> attachIRQ: servodataP=0x%08lX, pin=%d", (uint32_t)servoDataP, servoDataP->pin  );
+   attachInterruptArg( servoDataP->pin, ISR_Servo, servoDataP, FALLING );
 }
 
 static inline __attribute__((__always_inline__)) void servoWrite( servoData_t *servoDataP, uint32_t pulseWidth ) {

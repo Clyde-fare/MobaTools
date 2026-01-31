@@ -1,7 +1,7 @@
 #ifndef MOTODEBUG_H
 #define MOTODEBUG_H
 
-#define MESSAGES 2  // Level of #pragma messages to output ( 0 = no messages )
+#define MESSAGES 0  // Level of #pragma messages to output ( 0 = no messages )
 
 // die folgenden defines werden im aufrufenden cpp-File gesetzt.
 // so können die debugs klassenspezifisch eingeschaltet werden
@@ -9,7 +9,7 @@
 //#define debugPrint
 // über diese undef's kann das Debugging global abgeschaltet werden
 #undef debugTP
-#undef debugPrint
+//#undef debugPrint
 
 #ifdef debugTP 
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -284,7 +284,7 @@
         #define DB_PRINT( x, ... ) {char dbgBuf[80]; snprintf_P( dbgBuf, 80, PSTR( x ), ##__VA_ARGS__ ) ; Serial.println( dbgBuf ); }
         //#define DB_PRINT( x, ... ) {char dbgBuf[80]; sprintf( dbgBuf,  x , ##__VA_ARGS__ ) ; Serial.println( dbgBuf ); }
     #elif defined ARDUINO_ARCH_ESP32
-        #define DB_PRINT( x, ... ) Serial.printf(  x , ##__VA_ARGS__ ) 
+        #define DB_PRINT( x, ... ) {Serial.printf(  x , ##__VA_ARGS__ ) ; Serial.println();}
     #else
         #define DB_PRINT( x, ... ) {char dbgBuf[80]; sprintf( dbgBuf,  x , ##__VA_ARGS__ ) ; Serial.println( dbgBuf ); }
     #endif

@@ -8,7 +8,7 @@
 #define COMPILING_MOTOSERVO_CPP  // this allows servo-specific defines in includefiles
 
 //#define debugTP
-//#define debugPrint
+#define debugPrint
 #include <MobaTools.h>
 
 // Global Data for all instances and classes  --------------------------------
@@ -383,7 +383,7 @@ uint8_t MoToServo::attach( byte pinArg, uint16_t pmin, uint16_t pmax, bool autoO
     // set pulselength for angle 0 and 180
     _minPw = constrain( pmin, MINPULSEWIDTH, MAXPULSEWIDTH );
     _maxPw = constrain( pmax, MINPULSEWIDTH, MAXPULSEWIDTH );
-	DB_PRINT( "pin: %d, pmin:%d pmax%d autoOff=%d", pinArg, pmin, pmax, autoOff);
+	//DB_PRINT( "pin: %d, pmin:%d pmax%d autoOff=%d", pinArg, pmin, pmax, autoOff);
     
     // intialize objectspecific data
     _lastPos = 1500*TICS_PER_MICROSECOND*INC_PER_TIC ;    // initalize to middle position
@@ -397,7 +397,7 @@ uint8_t MoToServo::attach( byte pinArg, uint16_t pmin, uint16_t pmax, bool autoO
     // compute portaddress and bitmask related to pin number
     _servoData.portAdr = portOutputRegister(digitalPinToPort(pinArg));
     _servoData.bitMask = digitalPinToBitMask(pinArg);
-    DB_PRINT( "Idx: %d Portadr: 0x%x, Bitmsk: 0x%x", _servoData.servoIx, _servoData.portAdr, _servoData.bitMask );
+    //DB_PRINT( "Idx: %d Portadr: 0x%x, Bitmsk: 0x%x", _servoData.servoIx, _servoData.portAdr, _servoData.bitMask );
 	#endif
     pinMode (_servoData.pin,OUTPUT);
     digitalWrite( _servoData.pin,LOW);
@@ -410,7 +410,7 @@ uint8_t MoToServo::attach( byte pinArg, uint16_t pmin, uint16_t pmax, bool autoO
     #elif defined HAS_PWM_HW // ( ESP32 and RP2040/RP3250 so far )
         // pwmNbr will be negative if there are no free pwm channels
         _servoData.pwmNbr =  servoPwmSetup( &_servoData );
-        DB_PRINT("pwmNbr=%d, Pin=%d", _servoData.pwmNbr, _servoData.pin );
+        //DB_PRINT("pwmNbr=%d, Pin=%d", _servoData.pwmNbr, _servoData.pin );
         
     #else // create servo pulses in timer ISR
 		//DB_PRINT("Init Timer");
@@ -459,7 +459,8 @@ void MoToServo::write(uint16_t angleArg)
 {   // set position to move to
     // values between 0 and 180 are interpreted as degrees,
     // values between MINPULSEWIDTH and MAXPULSEWIDTH are interpreted as microseconds
-    static uint16_t newpos;
+    //DB_PRINT( "write1: Soll=%d, Ist=%d, Ix=%d, inc=%d, SR=%d, Duty100=%d, LEDC_BITS=%d", _servoData.soll,_servoData.ist, _servoData.servoIx, _servoData.inc, INC_PER_TIC, DUTY100, LEDC_BITS );
+    static servoPos_t newpos;
     bool startPulse = false;    // only for esp8266
     //SET_TP1;
     #ifdef ARDUINO_ARCH_AVR
@@ -498,20 +499,22 @@ void MoToServo::write(uint16_t angleArg)
             _servoData.soll= newpos ;
             interrupts();
         }
+		//DB_PRINT( "write2: read: Soll=%d, Ist=%d, Ix=%d, inc=%d, SR=%d, Duty100=%d, LEDC_BITS=%d", _servoData.soll,_servoData.ist, _servoData.servoIx, _servoData.inc, INC_PER_TIC, DUTY100, LEDC_BITS );
         #ifdef IS_ESP // start creating pulses?
             if ( (startPulse) || (_servoData.offcnt+_servoData.noAutoff) == 0  ) {
                 //SET_TP3;
                 // first pulse after attach, or pulses have been switch off by autoff
+				DB_PRINT("=====> start first Pulse (servodataP=0x%08lx) ", (uint32_t)&_servoData);
                 startServoPulse( &_servoData, _servoData.ist/INC_PER_TIC);
-                DB_PRINT( "start pulses at pin %d, ist=%d, soll=%d", _servoData.pin, _servoData.ist, _servoData.soll );
+                //DB_PRINT( "start pulses at pin %d, ist=%d, soll=%d", (int)_servoData.pin, _servoData.ist, _servoData.soll );
                 //CLR_TP3;
             }
         #endif
         _servoData.offcnt = OFF_COUNT;   // auf jeden Fall wieder Pulse ausgeben
     }
     //DB_PRINT( "Soll=%d, Ist=%d, Ix=%d, inc=%d, SR=%d, Duty100=%d, LEDC_BITS=%d", _servoData.soll,_servoData.ist, _servoData.servoIx, _servoData.inc, INC_PER_TIC, DUTY100, LEDC_BITS );
-    DB_PRINT( "Soll=%u, Ist=%d, Ix=%d, inc=%d, SR=%d", _servoData.soll,_servoData.ist, _servoData.servoIx, _servoData.inc, (int)INC_PER_TIC );
-	DB_PRINT( "t2tic=%u, tic2t=%u", (int)time2tic(map( angleArg, 0,180, _minPw, _maxPw)), (int)tic2time(_servoData.soll ) );
+    //DB_PRINT( "Soll=%u, Ist=%d, Ix=%d, inc=%d, SR=%d", _servoData.soll,_servoData.ist, _servoData.servoIx, _servoData.inc, (int)INC_PER_TIC );
+	//DB_PRINT( "t2tic=%u, tic2t=%u", (int)time2tic(map( angleArg, 0,180, _minPw, _maxPw)), (int)tic2time(_servoData.soll ) );
     //delay(2);
     //CLR_TP1;
 }
@@ -526,7 +529,7 @@ void MoToServo::setSpeedTime(uint16_t minMaxTime ) {
 	if ( speedCycles == 0 ) speedCycles = 1;	// Avoid divide by zero
 	uint16_t speedIncs = maxIncs / speedCycles;
 	setSpeed( speedIncs, HIGHRES );	// no compatibility mode, when new speed method is used
-	DB_PRINT(" IPM=%d, TPM=%d", INC_PER_MICROSECOND, TICS_PER_MICROSECOND );
+	//DB_PRINT(" IPM=%d, TPM=%d, speedIncs=%d, speedCycles=%d, maxIncs=%d ", INC_PER_MICROSECOND, TICS_PER_MICROSECOND,speedIncs, speedCycles, maxIncs );
 }
 	
 	
@@ -556,11 +559,13 @@ void MoToServo::setSpeed( uint16_t speed ) {
             _servoData.inc = AS_Speed2Inc(speed);
         interrupts();
     }
+	//DB_PRINT("inc=%d", _servoData.inc );
 }
 
 uint8_t MoToServo::read() {
     // get position in degrees
     if ( _servoData.pwmNbr == NOT_ATTACHED ) return -1; // Servo not attached
+    //DB_PRINT( "read: Soll=%d, Ist=%d, Ix=%d, inc=%d, SR=%d, Duty100=%d, LEDC_BITS=%d", _servoData.soll,_servoData.ist, _servoData.servoIx, _servoData.inc, INC_PER_TIC, DUTY100, LEDC_BITS );
     return (map( readMicroseconds(), _minPw, _maxPw, 0, 1800 )+5)/10;
 }
 
@@ -572,7 +577,7 @@ uint16_t MoToServo::readMicroseconds() {
     value = _servoData.ist;
     interrupts();
     if ( value == INVALID ) value = _servoData.soll; // there is no valid actual vlaue
-    //DB_PRINT( "Ist=%d, Soll=%d, TpM=%d, SR=%d", value, _servoData.soll, TICS_PER_MICROSECOND, INC_PER_TIC );
+    //DB_PRINT( "readMs: Ist=%d, Soll=%d, inc=%d, TpM=%d, SR=%d", value, _servoData.soll, _servoData.inc, TICS_PER_MICROSECOND, INC_PER_TIC );
     return tic2time( value );   
 }
 
@@ -594,4 +599,20 @@ uint8_t MoToServo::attached()
     return ( _servoData.pwmNbr != NOT_ATTACHED );
 }
 
+	void MoToServo::varAdr() {
+		//Ausgeben der Variablenadressen der Instanz auf den ser. Monitor
+		DB_PRINT("Sizof servoData=%d", sizeof(_servoData) );
+		DB_PRINT("Sizof MoToServo=%d", sizeof(MoToServo) );
+		DB_PRINT("This=      0x%08lX",(uint32_t)this);
+		DB_PRINT("&_lastPos= 0x%08lX",(uint32_t)&_lastPos);
+		DB_PRINT("&_maxPw=   0x%08lX",(uint32_t)&_maxPw);
+		DB_PRINT("&servoData=0x%08lX", (uint32_t)&_servoData );
+		DB_PRINT("&offcnt=   0x%08lX", (uint32_t)&_servoData.offcnt  );
+		DB_PRINT("&pwmNbr=   0x%08lX", (uint32_t)&_servoData.pwmNbr  );
+		DB_PRINT("&soll=     0x%08lX", (uint32_t)&_servoData.soll  );
+		DB_PRINT("&ist=      0x%08lX", (uint32_t)&_servoData.ist  );
+		DB_PRINT("&inc=      0x%08lX", (uint32_t)&_servoData.inc  );
+		DB_PRINT("&dummy=    0x%08lX",(uint32_t)&_servoData.dummy);
+	
+	}
 
