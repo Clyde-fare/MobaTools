@@ -55,7 +55,7 @@ Pulse length are always stored in inc. Only when creating the real pulse ( in IR
 //void ISR_Servo( void *arg );
 
 // global servo data ( used in ISR )
-struct servoData_t {
+struct  servoData_t {
   #ifndef IS_ESP // ESP8266 und ESP32 don't have a Servo chain
   struct servoData_t* prevServoDataP;
   #endif
@@ -74,7 +74,7 @@ struct servoData_t {
   servoPos_t soll;             // Target position that the servo should move to ( in increments ). 0: not initialized
   volatile servoPos_t ist;     // actual Position of the servo ( increments )
   servoPos_t inc;              // Schrittweite je Zyklus um Ist an Soll anzugleichen( in Tics )
-  volatile uint32_t dummy;
+
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////////////

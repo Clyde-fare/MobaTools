@@ -62,6 +62,8 @@ void seizeTimer1();
 //if  the following line is commented out, direct register access is used ( interrupts are not disabled during flash access )
 //#define LEDC_USE_SDK          // use SDK calls für Servo & Led Pulses ( interrupts are disbled during flash access )
                                 // !!!!!!! Die SDK-Aufrufe sind NICHT Interruptfest - die SDK-Version darf daher nicht // // !!!!!!! aktiviert werden, da die Interrupts NICHT abgeschaltet werden 
+#define servoPos_t uint32_t
+
 
 #ifdef COMPILING_MOTOSERVO_CPP
     //#warning compiling servo.cpp for ESP32
@@ -69,8 +71,6 @@ void seizeTimer1();
     #undef noInterrupts
     #define interrupts()    portEXIT_CRITICAL(&servoMux);
     #define noInterrupts()  portENTER_CRITICAL(&servoMux);
-	// define for MoToServo
-	#define servoPos_t int32_t
 #endif
 #ifdef COMPILING_MOTOSOFTLED_CPP
     //#warning compiling softled.cpp for ESP32
@@ -86,6 +86,8 @@ void seizeTimer1();
     #define interrupts()    portEXIT_CRITICAL(&stepperMux);
     #define noInterrupts()  portENTER_CRITICAL(&stepperMux);
 #endif
+
+
 typedef struct {
     union {
         struct {

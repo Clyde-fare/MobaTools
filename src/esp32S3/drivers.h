@@ -66,6 +66,8 @@ extern hw_timer_t * servoTimer;
 void seizeTimer1();		// überflüssig?? - wird wohl nicht mehr gebraucht
 
 // --------------   defines for servo and softled ( timer hardware on ESP32S is used ) -----------------------
+#define servoPos_t uint16_t
+
 
 #ifdef COMPILING_MOTOSERVO_CPP
     //#warning compiling servo.cpp for ESP32
@@ -73,8 +75,6 @@ void seizeTimer1();		// überflüssig?? - wird wohl nicht mehr gebraucht
     #undef noInterrupts
     #define interrupts()    portEXIT_CRITICAL(&servoMux);
     #define noInterrupts()  portENTER_CRITICAL(&servoMux);
-	// define for MoToServo
-	#define servoPos_t int32_t
 #endif
 #ifdef COMPILING_MOTOSOFTLED_CPP
     //#warning compiling softled.cpp for ESP32

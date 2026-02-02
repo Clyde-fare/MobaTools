@@ -612,7 +612,6 @@ uint8_t MoToServo::attached()
 		DB_PRINT("&soll=     0x%08lX", (uint32_t)&_servoData.soll  );
 		DB_PRINT("&ist=      0x%08lX", (uint32_t)&_servoData.ist  );
 		DB_PRINT("&inc=      0x%08lX", (uint32_t)&_servoData.inc  );
-		DB_PRINT("&dummy=    0x%08lX",(uint32_t)&_servoData.dummy);
 	
 	}
 
