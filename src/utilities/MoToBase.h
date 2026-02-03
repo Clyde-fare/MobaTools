@@ -93,6 +93,7 @@ extern nextCycle_t nextCycle;   // to be used in ISR for stepper and softled
 //#define TIMERPERIODE    20000   // Timer Overflow in µs
 //#define TIMER_OVL_TICS  ( TIMERPERIODE*TICS_PER_MICROSECOND )
 // Starting with V3.0 the timer ( allways 16-bits - apart from ESP32/RP2040 ) overflows at max (0xFFFF)
+#define SERVOPERIODE 	20000	
 constexpr uint16_t TIMER_OVL_TICS = 0xffff;
 #define TIMERPERIODE   (TIMER_OVL_TICS / TICS_PER_MICROSECOND) // Timer Overflow in µs
 

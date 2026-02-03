@@ -16,12 +16,12 @@ static inline __attribute__((__always_inline__)) void  _stepIRQ() {
 void ISR_Servo( void *arg );
 
 static inline __attribute__((__always_inline__)) void startServoPulse(servoData_t *servoDataP, uint32_t pulseWidth ) {
-    startWaveformMoTo(servoDataP->pin, pulseWidth/TICS_PER_MICROSECOND, TIMERPERIODE-(pulseWidth/TICS_PER_MICROSECOND),0);
+    startWaveformMoTo(servoDataP->pin, pulseWidth/TICS_PER_MICROSECOND, SERVOPERIODE-(pulseWidth/TICS_PER_MICROSECOND),0);
 }
 
 static inline __attribute__((__always_inline__)) void servoWrite( servoData_t *servoDataP, uint32_t pulseWidth ) {
     // the same funktion exists for ESP32 ( with another internal call )
-    startWaveformMoTo(servoDataP->pin, pulseWidth/TICS_PER_MICROSECOND, TIMERPERIODE-(pulseWidth/TICS_PER_MICROSECOND),0);
+    startWaveformMoTo(servoDataP->pin, pulseWidth/TICS_PER_MICROSECOND, SERVOPERIODE-(pulseWidth/TICS_PER_MICROSECOND),0);
 }
 
 static inline __attribute__((__always_inline__)) void servoPulseOff( servoData_t *servoDataP ) {
