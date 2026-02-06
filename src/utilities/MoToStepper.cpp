@@ -8,7 +8,7 @@
 #define COMPILING_MOTOSTEPPER_CPP
 
 #define debugTP
-//#define debugPrint
+#define debugPrint
 #include <MobaTools.h>
 #define TODO	// ignore 
 // Global Data for all instances and classes  --------------------------------
@@ -171,19 +171,20 @@ uint8_t MoToStepper::attach( uint8_t pin1, uint8_t pin2, uint8_t pin3, uint8_t p
 }
 #endif // no ESP8266
 
-#ifdef ARDUINO_ARCH_ESP32
-uint8_t MoToStepper::attach( outArg_t outArg, byte ccPin, byte clkPin, byte MosiPin ) {
-	// SPI-attach with pin-definitions ( only for ESP32 )
-	// This does not seem to work on Variants C3,C6,S2 ...
+#ifdef SET_SPI_PINS
+uint8_t MoToStepper::attach( outArg_t outArg, byte ssPin, byte clkPin, byte MosiPin ) {
+	// SPI-attach with pin-definitions ( only some boards , mostly only SS-Pin can be set )
+	// This does not seem to work on Variants ESP32 C3,C6,S2 ...
+	DB_PRINT("SPI-Pins: SS=%d, SCK=%d, MOSI=%d", ssPin, clkPin, MosiPin );
 	if ( outArg < SPI_1 ) return 0; // wrong mode
     byte pins[4];
-    pins[0] = ccPin;
+    pins[0] = ssPin;
     pins[1] = clkPin;
     pins[2] = MosiPin;
-    pins[3] = 0;
+    pins[3] = 255;
     return MoToStepper::attach( outArg, pins );
 }
-#endif // is ESP32
+#endif // SPI pins can be set
 
 #ifndef NO_SPISTEPPER // with SPI Stepper
 uint8_t MoToStepper::attach(outArg_t outArg) {
@@ -221,9 +222,9 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
             // incompatible!
             attachOK = false;
         } else {
-			#ifdef ARDUINO_ARCH_ESP32
+			#ifdef SET_SPI_PINS
 			if ( pins != NULL ) {
-				// with definition of SPI-Pins ( only ESP32 )
+				// with definition of SPI-Pins 
 				initSpiAS(pins[0],pins[1],pins[2]); // CC, CLK, MOSI
 			} else {
 				initSpiAS();
@@ -234,6 +235,8 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
             MoToStepper::outputsUsed.outputs |= (1<<(outArg-SPI_1));
         }
         break;
+	#endif
+	#ifndef ESP8266  // no 4 or 2Pin Mode with ESP8266
       case SINGLE_PINS2:
       case SINGLE_PINS4:
         // 4 single output pins - as yet there is no check if they are allowed!

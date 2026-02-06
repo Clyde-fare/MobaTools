@@ -27,7 +27,7 @@ enum outArg_t {
 #endif
 #ifndef NO_SPISTEPPER
 	SPI_1			= 5	,	// The numbers for SPI_1...SPI_4 must be in direct sequence
-	SPI_2 ,
+	SPI_2 ,					// and must be the last in this enum
 	SPI_3 ,
 	SPI_4 ,
 #endif
@@ -223,10 +223,10 @@ class MoToStepper
                                         // mode means STEPDIR ( Step/Dir), HALFSTEP or FULLSTEP
         //Methods - not for ESP8266                               
         uint8_t attach( uint8_t,uint8_t,uint8_t,uint8_t,uint8_t invert=0); //single pins definition for output
-		#ifdef ARDUINO_ARCH_ESP32
-        uint8_t attach( outArg_t,uint8_t,uint8_t,uint8_t); //SPI definition for output with pindefs
+		#ifdef SET_SPI_PINS
+        uint8_t attach( outArg_t,uint8_t,uint8_t=255,uint8_t=255); //SPI definition for output with pindefs
 		#endif
-        uint8_t attach(outArg_t outArg);    //SPI definition for output without pindefs
+       uint8_t attach(outArg_t outArg);    //SPI definition for output without pindefs
 		void attachEnable( uint16_t delay ); // enable for unipolar steppers with 4 pins
     #endif
 	// Methods for all supported boards

@@ -28,6 +28,8 @@ extern "C" {
     #define SS          15
 #endif
 
+#define SET_SPI_PINS // can be set in attach method
+
 struct timerConfig_t {
   union {
     struct {

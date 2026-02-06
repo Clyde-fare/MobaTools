@@ -6,6 +6,8 @@
 #define IRAM_ATTR       // delete in .cpp files, because it has no meaning for AVR processors
 #define DRAM_ATTR
 
+#define SET_SPI_PINS  // but only SSPin can be set in attach method
+
 #ifdef  ARDUINO_AVR_LARDU_328E
 	// Timer3 of LGT8Fx is incompatible with MobaTools
 	#define NO_TIMER3
@@ -28,7 +30,6 @@
 	#endif
 #endif
 #define MIN_STEP_CYCLE  2       // Minimum number of cycles per step. 
-
 
 #define FAST_PORTWRT        // if this is defined, ports are written directly in IRQ-Routines,
                             // not with 'digitalWrite' functions

@@ -71,35 +71,46 @@ extern uint8_t bitSS;;
         #undef SS
         #define SS USI_SS
     #endif
-    /* //Testweise den SS-Pin ausgeben
+	#ifdef ARDUINO_AVR_LEONARDO  // The default SS-Pin in Arduino Core is wrong
+	#define SS 10
+	#endif
+     /*//Testweise den SS-Pin ausgeben
     #define STRING2(x) #x
-    #define STRING(x) "\n\r>>>>>>SS-Pin: "  STRING2(x)
-    #ifdef PIN_SPI_SS
-        #pragma message (STRING(PIN_SPI_SS))
-    #elif defined SS
+    #ifdef SS
+		#define STRING(x) "\n\r>>>>>>SS-Pin: "  STRING2(x)
         #pragma message (STRING(SS))
-    #else
+	#endif
+    #ifdef PIN_SPI_SS
+		#define STRING(x) "\n\r>>>>PIN_SPI_SS: "  STRING2(x)
+        #pragma message (STRING(PIN_SPI_SS))
+	#endif
+    #if !defined SS && !defined PIN_SPI_SS
         #pragma message "SS-Pin not defined"
-    #endif
-    */
+    #endif*/
+    
     volatile uint8_t *portSS;
     uint8_t bitSS;;
 
 #ifdef SPCR
-    // we hae ar real SPI hardware
+    // we have ar real SPI hardware
     //#warning "SPI Hardware is used"
     uint8_t spiByteCount = 0;
-    static inline __attribute__((__always_inline__)) void initSpiAS() {
+    static inline __attribute__((__always_inline__)) void initSpiAS(byte ssPin = SS, byte clkPin = SCK, byte mosiPin = MOSI ) {
+		// only SS-Pin can be really set
+		(void)clkPin; (void)mosiPin; // to supress warning about unused parameters
         if ( spiInitialized ) return;
+		DB_PRINT("SS=%d",ssPin);
         // initialize SPI hardware.
         // MSB first, default Clk Level is 0, shift on leading edge
         const uint8_t oldSREG = SREG;
         cli();
         pinMode( MOSI, OUTPUT );
         pinMode( SCK, OUTPUT );
-        portSS = portOutputRegister(digitalPinToPort(SS));
-        bitSS = digitalPinToBitMask(SS);
-        pinMode( SS, OUTPUT );
+        portSS = portOutputRegister(digitalPinToPort(ssPin));
+        bitSS = digitalPinToBitMask(ssPin);
+        pinMode( ssPin, OUTPUT );
+		DB_PRINT("portSS=0x%2X",portSS);
+		DB_PRINT(" bitSS=0x%2X",bitSS);
         SPCR = (1<<SPIE)    // Interrupt enable
              | (1<<SPE )    // SPI enable
              | (0<<DORD)    // MSB first
@@ -108,7 +119,7 @@ extern uint8_t bitSS;;
              | (0<<CPHA)    // Data is sampled on leading edge
              | (0<<SPR1) | (1<<SPR0);    // fosc/16
 		SPSR = (1<<SPI2X);	// double SPI-Clock ( now fosc/8 )
-        //digitalWrite( SS, HIGH );
+        //digitalWrite( ssPin, HIGH );
         SET_SS;
         SREG = oldSREG;  // undo cli() 
         spiInitialized = true;  

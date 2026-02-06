@@ -10,6 +10,10 @@
 #define IRAM_ATTR       // delete in .cpp files, because it has no meaning for megaAVR processors
 #define DRAM_ATTR
 
+#ifndef CYCLETIME
+	#define CYCLETIME       200     // Min. irq-periode in us ( default is 200 ), 
+#endif
+#define MIN_STEP_CYCLE  2       // Minimum number of cycles per step. 
 
 #define FAST_PORTWRT        // if this is defined, ports are written directly in IRQ-Routines,
                             // not with 'digitalWrite' functions
