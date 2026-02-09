@@ -1,8 +1,10 @@
 #ifndef MOTOMEGATINYAVR_H
 #define MOTOMEGATINYAVR_H
-// AVR specific defines for Cpp files
+// MegaTiny AVR specific defines for Cpp files
 
-#warning megaTinyAVR specific cpp includes
+#if MESSAGES >0
+#pragma message "megaTinyAVR specific cpp includes"
+#endif
 
 void seizeTimerAS();
 // reenabling interrupts within an ISR
@@ -53,7 +55,7 @@ static inline __attribute__((__always_inline__)) void enableServoIsrAS() {
     TCA0_SINGLE_INTCTRL |= TCA_SINGLE_CMP0_bm ; 
 }
 
-#define setServoCmpAS(x)		// ignore this call
+#define setServoCmpAS(x)	TCA0_SINGLE_CMP0 = x	// Set compare reg
 
 #endif // COMPILING_MOTOSERVO_CPP
 
@@ -90,7 +92,9 @@ extern uint8_t bitSS;
         pinMode( MoToSS, OUTPUT );
 		// Map SPI0-pins  
         PORTMUX_SPIROUTEA &=  ~PORTMUX_SPI0_gm; // Clear SPI-Bits
-        PORTMUX_SPIROUTEA |=  SPI_MUX; // set MUX according to Board    
+		#ifdef SPI_MUX
+			PORTMUX_SPIROUTEA |=  SPI_MUX; // set MUX according to Board    
+		#endif
 		// SPI-Mode 0 mit Sendebuffer ( 2.byte kann sofort geschrieben werden )
 		// SPI0_CTRLB = SPI_MODE_0_gc | SPI_BUFEN_bm | SPI_BUFWR_bm | SPI_SSD_bm;
 		SPI0_CTRLB = SPI_MODE_0_gc | SPI_BUFEN_bm | SPI_BUFWR_bm | SPI_SSD_bm;

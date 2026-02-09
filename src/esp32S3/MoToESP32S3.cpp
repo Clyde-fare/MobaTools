@@ -1,8 +1,8 @@
 // ESP32 HW-spcific Functions
+#ifdef IS_ESP32S
 #define debugTP
 //#define debugPrint
 #include <MobaTools.h>
-#ifdef IS_ESP32S
 
 #if MESSAGES > 0  
 #pragma message "compiling MoToESP32S3"

@@ -114,7 +114,7 @@ typedef struct {    // portaddress and bitmask for direkt pin set/reset ( only u
 
 #include <utilities/MoToDbg.h>
 
-#ifdef ARCHITECT_INCLUDE		// Defined in MoToBase.h if MCU-specific includes are required.
+#ifdef ARCHITECT_INCLUDE		// Defined in drivers.h if MCU-specific includes are required.
 #include ARCHITECT_INCLUDE
 #endif
 

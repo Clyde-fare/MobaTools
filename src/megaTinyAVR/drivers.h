@@ -14,6 +14,15 @@
 	#define CYCLETIME       200     // Min. irq-periode in us ( default is 200 ), 
 #endif
 #define MIN_STEP_CYCLE  2       // Minimum number of cycles per step. 
+#ifndef MoToSS
+  #if defined __AVR_TINY_2__
+    // SPI SS for ATtiny 2 series
+    #define MoToSS PIN_PA4	// Standard for ATtiny 2 series is pin PA4(0);
+  #else
+		// default for other ( are there any?) boards or megaCoreX core
+		#define MoToSS 10		// standard for other boards
+	#endif
+#endif
 
 #define FAST_PORTWRT        // if this is defined, ports are written directly in IRQ-Routines,
                             // not with 'digitalWrite' functions

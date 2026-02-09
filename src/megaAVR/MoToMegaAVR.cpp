@@ -1,9 +1,8 @@
 // AVR HW-spcific Functions
-#ifdef ARDUINO_ARCH_MEGAAVR
-#include <MobaTools.h>
+#if (defined ARDUINO_ARCH_MEGAAVR) && (!defined MEGATINYCORE_RELEASED)
 #define debugTP
 //#define debugPrint
-#include <utilities/MoToDbg.h>
+#include <MobaTools.h>
 
 //#warning "HW specfic - megaavr ( Mega4809 ) ---"
 

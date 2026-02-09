@@ -1,8 +1,10 @@
 #ifndef MOTOMEGAAVR_H
 #define MOTOMEGAAVR_H
-// AVR specific defines for Cpp files
+// Mega-AVR specific defines for Cpp files
 
-//#warning megaAVR specific cpp includes
+#if MESSAGES >0
+#pragma message "megaAVR specific cpp includes"
+#endif
 
 void seizeTimerAS();
 // reenabling interrupts within an ISR

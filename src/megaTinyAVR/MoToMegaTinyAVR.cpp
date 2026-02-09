@@ -1,12 +1,8 @@
 // AVR HW-spcific Functions
-#if defined ARDUINO_ARCH_MEGAAVR
+#if defined MEGATINYCORE_RELEASED
 
-#if defined (MEGATINYCORE)
-
-#include <MobaTools.h>
 #define debugTP
-//#define debugPrint
-#include <utilities/MoToDbg.h>
+#include <MobaTools.h>
 
 #warning "TIMER HW specfic - megatinyavr ---"
 #ifndef MILLIS_USE_TIMERB1
@@ -24,7 +20,6 @@ void softledISR(nextCycle_t cyclesLastIRQ) __attribute__ ((weak));
 // reenabling interrupts within an ISR
 __attribute(( naked, noinline )) void isrIrqOn () { asm("reti"); }
 
-
 ISR ( TCA0_CMP1_vect) {
     uint16_t tmp;
   // Timer TCA0 Compare 1, used for stepper motor, starts every CYCLETIME us
@@ -33,35 +28,36 @@ ISR ( TCA0_CMP1_vect) {
 	TCA0.SINGLE.INTFLAGS = TCA_SINGLE_CMP1_bm;	// Reset IRQ-flag
 
     nextCycle = ISR_IDLETIME  / CYCLETIME ;// min ist one cycle per IDLETIME
+	SET_TP2;
     if ( stepperISR ) stepperISR(cyclesLastIRQ);
     //============  End of steppermotor ======================================
    if ( softledISR ) softledISR(cyclesLastIRQ);
     // ======================= end of softleds =====================================
+	CLR_TP2;
     // set compareregister to next interrupt time;
     // compute next IRQ-Time in us, not in tics, so we don't need long
     noInterrupts(); // when manipulating 16bit Timerregisters IRQ must be disabled (mandatory for Mega4809!!!)
     if ( nextCycle == 1 )  {
-        //CLR_TP1;
+        CLR_TP1;
         // this is timecritical: Was the ISR running longer then CYCELTIME?
         // compute length of current IRQ ( which startet at OCRxB )
         // we assume a max. runtime of 1000 Tics ( = 500µs , what nevver should happen )
         tmp = GET_COUNT - OCRxB ;
-        if ( tmp > 1000 ) tmp += TIMER_OVL_TICS; // there was a timer overflow
         if ( tmp > (CYCLETICS-10) ) {
             // runtime was too long, next IRQ mus be started immediatly
-            //SET_TP3;
-            tmp = GET_COUNT+10; 
+            tmp = GET_COUNT+20; 
         } else {
             tmp = OCRxB + CYCLETICS;
         }
-        OCRxB = ( tmp > TIMER_OVL_TICS ) ? tmp -= TIMER_OVL_TICS : tmp ;
-        //SET_TP1;
+		SET_TP1;
     } else {
         // time till next IRQ is more then one cycletime
+        SET_TP2;
         tmp = ( OCRxB + (nextCycle * CYCLETICS) );
-        if ( tmp >= TIMER_OVL_TICS ) tmp = tmp - TIMER_OVL_TICS;
-        OCRxB = tmp ;
+        //if ( tmp >= TIMER_OVL_TICS ) tmp = tmp - TIMER_OVL_TICS;
+        CLR_TP2;
     }
+    OCRxB = tmp ;
     interrupts();
     cyclesLastIRQ = nextCycle;
     CLR_TP1; // Oszimessung Dauer der ISR-Routine
@@ -90,9 +86,10 @@ void seizeTimerAS() {
         TCA0.SINGLE.CTRLESET = TCA_SINGLE_LUPD_bm;          // don't use buffered compare registes
         //TCA0.SINGLE.CTRLFCLR                              / wasn't used in megaavr code - not sure what it would do here
         //TCA0.SINGLE.CTRLFSET                              // wasn't used in megaavr code - not sure what it would do here
-        TCA0.SINGLE.INTCTRL = TCA_SINGLE_CMP0_bm | TCA_SINGLE_CMP1_bm; // enable cmp0 and cmp1 interrupt
+        //TCA0.SINGLE.INTCTRL = TCA_SINGLE_CMP0_bm | TCA_SINGLE_CMP1_bm; // enable cmp0 and cmp1 interrupt
         TCA0.SINGLE.INTFLAGS = 0;   // clear all interrupts
-        TCA0.SINGLE.PER  = TIMERPERIODE * TICS_PER_MICROSECOND;  // timer periode is 20000us
+        //TCA0_SINGLE_PER  = TIMERPERIODE * TICS_PER_MICROSECOND;  // timer periode is 20000us V3.0: its now max (0xFFFF)
+        TCA0_SINGLE_PER  = 0xFFFF;  // V3.0: its now max (0xFFFF)
         TCA0.SINGLE.CMP0 = FIRST_PULSE;
         TCA0.SINGLE.CMP1 = 400; //CPM1 
         TCA0.SINGLE.CTRLA |= TCA_SINGLE_ENABLE_bm;          // Enable the timer
@@ -122,7 +119,5 @@ ISR ( SPI0_INT_vect ) {
 void enableSoftLedIsrAS() {
 }
 
-
-#endif
 
 #endif
