@@ -23,7 +23,7 @@ byte simuIx;                                                // Index of actual s
 const byte taster = 12;                                     // a press switches to next simulation
 const byte ledPins[] = {15, 2, 4, 16, 17, 5, 18, 19};       // pins for ESP32 dev module, must be 8 leds
 #else
-const byte taster = 2;                                     // a press switches to next simulation
+const byte taster = A2;                                     // a press switches to next simulation
 const byte ledPins[] = {3, 4, 5, 6, 7, 8, 9, 10};            // pins for AVR ( UNO,Nano,Mini,Leonardo.., must be 8 leds
 #endif
 const byte pinCount = sizeof(ledPins);

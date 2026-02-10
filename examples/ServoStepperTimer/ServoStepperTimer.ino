@@ -8,12 +8,12 @@
     - 2. stepper moves to position 2*(steps/rev) when a button is pressed short. If the button
       is pressed long it moves to position -2*(steps/rev). If the button is pressed
       while its moving, it imediately moves to position 0.
-    -
+  And a LED is flashing all the time  -
 */
-// Pin definitions - adjsut to your own needs
+// Pin definitions - adjust to your own needs
 // The buttons must be connected between pin and Gnd
-const byte servoButton = A5;
-const byte stepperButton = A4;
+const byte servoButton = A0;
+const byte stepperButton = A1;
 
 const byte servo1Pin = 3;
 const byte servo2Pin = 4;
@@ -26,7 +26,7 @@ const byte step2DirPin = 5;
 const byte step2StepPin = 6;
 const byte step2EnaPin = 7;
 
-const byte led1Pin = 13;
+const byte led1Pin = LED_BUILTIN;
 
 
 
@@ -50,6 +50,11 @@ MoToStepper buttonStepper(mStepRev, STEPDIR );   // Stepper that moves according
 
 // Timer
 MoToTimebase stepperTimer;  // for timed movement of autoStepper
+MoToTimer ledTimer;
+
+// Led
+MoToSoftLed blinkLed;
+
 
 // Buttons
 const byte buttonPins[] = { servoButton, stepperButton };
@@ -63,6 +68,7 @@ void sweepServoFSM();       // Sweeping servo
 void buttonServoFSM();      // Servo controlled by button SRVBUT
 void autoStepperFSM();      // sweeping stepper
 void buttonStepperFSM();    // Stepper controlled by button STPBUT
+void autoLedFSM();
 
 void setup() {
   Serial.begin(115200);
@@ -84,4 +90,6 @@ void loop() {
   buttonServoFSM(); 
   autoStepperFSM();
   buttonStepperFSM();
+  // Blink led
+  autoLedFSM();
 }

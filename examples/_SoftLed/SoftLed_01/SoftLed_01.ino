@@ -9,7 +9,7 @@
  * SoftLed.off();               // 'weich' ausschalten
 */
 
-const byte ledPin =  13;  // beliebiger Digital Pin
+const byte ledPin =  LED_BUILTIN;  // beliebiger Digital Pin
 
 
 MoToSoftLed meinLed;
