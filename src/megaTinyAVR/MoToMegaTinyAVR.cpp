@@ -41,7 +41,6 @@ ISR ( TCA0_CMP1_vect) {
         CLR_TP1;
         // this is timecritical: Was the ISR running longer then CYCELTIME?
         // compute length of current IRQ ( which startet at OCRxB )
-        // we assume a max. runtime of 1000 Tics ( = 500µs , what nevver should happen )
         tmp = GET_COUNT - OCRxB ;
         if ( tmp > (CYCLETICS-10) ) {
             // runtime was too long, next IRQ mus be started immediatly

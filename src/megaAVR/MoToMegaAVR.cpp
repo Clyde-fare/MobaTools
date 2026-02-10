@@ -39,26 +39,22 @@ ISR ( TCA0_CMP1_vect) {
         // This is timecritical: Was the ISR running longer then CYCELTIME?
         // compute length of current IRQ ( which startet at OCRxB )
         // Tic-Time is 4µs on 4809!!! ( because of millis() using the TCA0 prescaler )
-        // We assume a max. runtime of 120 Tics ( = 480µs , what never should happen )
-		// so if the difference is > 120 tics, we assume an timer overflow
         tmp = GET_COUNT - OCRxB ;
-        if ( tmp > 120 ) tmp += TIMER_OVL_TICS; // there was a timer overflow
+        //if ( tmp > 120 ) tmp += TIMER_OVL_TICS; // there was a timer overflow
         if ( tmp > (CYCLETICS-2) ) {
             // runtime was too long, next IRQ mus be started immediatly
             //SET_TP3;
-            tmp = GET_COUNT+2; 
+            tmp = GET_COUNT+4; 
         } else {
             tmp = OCRxB + CYCLETICS;
         }
-        OCRxB = ( tmp > TIMER_OVL_TICS ) ? tmp - TIMER_OVL_TICS : tmp ;
-        //interrupts();
         SET_TP1;
     } else {
         // time till next IRQ is more then one cycletime
         tmp = ( OCRxB + (nextCycle * CYCLETICS) );
-        if ( tmp >= TIMER_OVL_TICS ) tmp = tmp - TIMER_OVL_TICS;
-        OCRxB = tmp ;
+        //if ( tmp >= TIMER_OVL_TICS ) tmp = tmp - TIMER_OVL_TICS;
     }
+    OCRxB = tmp ;
 	interrupts();
     cyclesLastIRQ = nextCycle;
     CLR_TP1; // Oszimessung Dauer der ISR-Routine
