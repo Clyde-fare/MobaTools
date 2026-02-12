@@ -19,6 +19,7 @@ extern "C" {
 // use of SPI interface. Pinnumbers can be overriden by attach Method
 // Default pinnumbers defined here are for Arduino Nano ESP32 
 #define SPI_USED    FSPI	// Arduino Nano uses Arduino pin numbers by default
+#define SET_SPI_PINS // can be set in attach method - To be checked with which variant it is possible
 
 /* SPI-Pins are defined in '...\variants\boardname' files as const uint8_t
    it cannot be checked witn #ifdef here

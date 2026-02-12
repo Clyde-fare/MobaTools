@@ -144,7 +144,7 @@ bool MoToStepper::_chkRunning() { // ###########################################
 
 // public functions -------------------
 uint8_t MoToStepper::attach( uint8_t stepP, uint8_t dirP, uint8_t invFlg ) { //######################################
-	// negative parameteers means the pin will be inverted 
+	// invFlg is a bitmap which pins should be inverted
     // step motor driver STEPDIR or FULLSTEP with only 2 pins is used
     byte pins[2];
     if ( stepMode != STEPDIR && stepMode != FULLSTEP ) return 0;    // wrong mode
@@ -225,7 +225,9 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
 			#ifdef SET_SPI_PINS
 			if ( pins != NULL ) {
 				// with definition of SPI-Pins 
-				initSpiAS(pins[0],pins[1],pins[2]); // CC, CLK, MOSI
+				if( pins[1] == 255 ) initSpiAS(pins[0] ); // CC, CLK and MOSI=default
+				else if (pins[2]==255) initSpiAS(pins[0],pins[1] ); // CC, CLK, MOSI=default
+				else initSpiAS(pins[0],pins[1],pins[2]); // CC, CLK, MOSI
 			} else {
 				initSpiAS();
 			}
