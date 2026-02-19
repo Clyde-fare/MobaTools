@@ -237,8 +237,8 @@ uint8_t MoToStepper::attach( outArg_t outArg, byte pins[] ) {
             MoToStepper::outputsUsed.outputs |= (1<<(outArg-SPI_1));
         }
         break;
-	#endif
-	#ifndef ESP8266  // no 4 or 2Pin Mode with ESP8266
+	  #endif // with SPI Stepper
+	  #ifndef ESP8266  // no 4 or 2Pin Mode with ESP8266
       case SINGLE_PINS2:
       case SINGLE_PINS4:
         // 4 single output pins - as yet there is no check if they are allowed!

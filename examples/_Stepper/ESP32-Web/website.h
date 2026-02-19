@@ -61,7 +61,7 @@ const char HTMLTEXT[] = R"(<!DOCTYPE html>
     </head>
     <body>
         <h2>Schrittmotor bewegen</h2>
-        <h3>ESP32 Dev Module</h3>
+        <h3>%s</h3>
         <form action="/stepper">
             <div class="flex-container">
                 <p class="flex-item">

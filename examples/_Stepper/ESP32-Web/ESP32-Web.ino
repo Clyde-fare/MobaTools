@@ -6,9 +6,9 @@
 const char *ssid = "Esp32AP";      // frei zu vergebener Name des Access Points, kann bis zu 32 Zeichen haben
 const char *password = "12345678"; // frei zu vergebenes Passwort, mindestens 8 Zeichen jedoch nicht länger als 64 Zeichen
 
-const byte dirPin       = 32; // verbinden mit DIR des Schrittmotortreibers
-const byte stepPin      = 33; // verbinden mit STEP des Schrittmotortreibers
-const byte enaPin       = 25; // verbinden mit ENA des Schrittmotortreibers
+const byte dirPin       = 2; // verbinden mit DIR des Schrittmotortreibers
+const byte stepPin      = 4; // verbinden mit STEP des Schrittmotortreibers
+const byte enaPin       = 5; // verbinden mit ENA des Schrittmotortreibers
 
 enum class Aktionen {STOP, LINKS, RECHTS, CONTL, CONTR};  // Aktionen des endlichen Automaten
 const int STEPS_REVOLUTION = 3200;                         // 1/16 Microstep -> 3200 Schritte / Umdrehung
@@ -17,7 +17,7 @@ WebServer server(80);
 
 #define DEBUGGING                                         // Einkommentieren für die Serielle Ausgabe
 #ifdef DEBUGGING
-#define DEBUG_B(...) Serial.begin(__VA_ARGS__)
+#define DEBUG_B(...) {Serial.begin(__VA_ARGS__); while(!Serial);}
 #define DEBUG_P(...) Serial.println(__VA_ARGS__)
 #define DEBUG_F(...) Serial.printf(__VA_ARGS__)
 #else
@@ -75,7 +75,7 @@ void handleStepper() {        // Reaktion auf Eingaben und Html-Seite als Antwor
     htRamp = myStepper.setRampLen(htRamp);
   }
 
-  int htmlSize = snprintf( htmlTemp, sizeof(htmlTemp), HTMLTEXT, htSpeed/10, htRamp );
+  int htmlSize = snprintf( htmlTemp, sizeof(htmlTemp), HTMLTEXT, ARDUINO_BOARD, htSpeed/10, htRamp );
   server.send(200, "text/html", htmlTemp);
   DEBUG_F("Html-Größe = %d Byte\n\r", htmlSize);
 }

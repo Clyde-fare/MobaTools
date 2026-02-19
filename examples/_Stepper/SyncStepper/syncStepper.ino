@@ -1,6 +1,7 @@
 // Syncronous move of MoToStepper steppers
 #include <MobaTools.h>
 
+// Change stepper pins to your needs ...
 constexpr uint8_t step1Pin  = 6;
 constexpr uint8_t dir1Pin   = 5;
 constexpr uint8_t ena1Pin   = 7;
@@ -16,9 +17,9 @@ MoToSyncStepper mySteppers;
 constexpr uint8_t posCnt = 7;
 long syncPos[posCnt][2] = { // List of target positions
     { 800, 1600 },
-    { 1600, 3200 },
+    { 2000, 2600 },
     { 800, -6000 },
-    { 777, -3333 },
+    { -777, -5533 },
     {0,0},
     {400,700 },
     {0,0},
@@ -28,6 +29,7 @@ char txtBuf[60];
 
 void setup() {
     Serial.begin(115200);
+	while(!Serial);			// needed for boards with native USB
     // Initialize steppers
     stepper1.attach( step1Pin,dir1Pin );
     stepper1.attachEnable(ena1Pin,50,LOW);
@@ -36,11 +38,11 @@ void setup() {
     // Add steppers to MoToSyncStepper
     mySteppers.addStepper( stepper1 );
     mySteppers.addStepper( stepper2 );
-    mySteppers.setMaxSpeedSteps(5000, 500);		// set speed and ramp
+    mySteppers.setMaxSpeedSteps(20000, 500);		// set speed and ramp
 }
 
 void loop() {
-    Serial.println("Press any key to start...");
+    Serial.println("Send any key to start...");
     while(  !Serial.available() );
     // type any character in serial monitor to start
     while (Serial.available() ) Serial.read(); // clear buffer
