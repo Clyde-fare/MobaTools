@@ -3,14 +3,16 @@
 */
 #ifdef ARDUINO_UNOR4_WIFI
 #include <WiFiS3.h>
+#elif defined ARDUINO_RASPBERRY_PI_PICO_2W || defined ARDUINO_RASPBERRY_PI_PICO_W
+#include <WiFi.h>
 #else
 #include <WiFiNINA.h>
 #endif
 #include <MobaTools.h>  // ab 2.4.0: https://github.com/MicroBahner/MobaTools
 
 // select the language of the website
-#include "websiteDE.h"
-//#include "websiteEN.h"
+//#include "websiteDE.h"
+#include "websiteEN.h"
 
 //#define OWN_AP // with own Wifi Network ( connects to an existing network if commented out )
 

@@ -17,8 +17,6 @@
   SPI occupies the pins 10(SS), 11(MOSI) and 13(SCK) of the UNO or nano.
   Pin 12 (MISO) is not used, but is occupied by the hardware
   In this example Step1 is connected directly while Step2 is connected via SPI.
-
-Translated with www.DeepL.com/Translator (free version)
  */
 #include <MobaTools.h>
 const int FULLROT1 = 400;

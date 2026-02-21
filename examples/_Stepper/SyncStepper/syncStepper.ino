@@ -2,7 +2,7 @@
 #include <MobaTools.h>
 
 // Change stepper pins to your needs ...
-constexpr uint8_t step1Pin  = 6;
+constexpr uint8_t step1Pin  = 33;
 constexpr uint8_t dir1Pin   = 5;
 constexpr uint8_t ena1Pin   = 7;
 constexpr uint8_t step2Pin  = 9;
