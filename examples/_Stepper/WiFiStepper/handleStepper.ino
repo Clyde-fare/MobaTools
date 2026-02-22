@@ -34,23 +34,23 @@ void esp32Stepper(const Aktionen aktion) {
   switch (aktion) {
     case Aktionen::LINKS:
       myStepper.doSteps(-STEPS_REVOLUTION); // Stepper dreht eine Umdrehung links
-      Serial.println(">>>>> Stepper dreht eine Umdrehung links.");
+      Serial.println(">>>>> One rev. left");
       break;
     case Aktionen::RECHTS:
       myStepper.doSteps(STEPS_REVOLUTION); // Stepper dreht eine Umdrehung rechts
-      Serial.println(">>>>> Stepper dreht eine Umdrehung rechts.");
+      Serial.println(">>>>> One rev. right");
       break;
     case Aktionen::CONTL:
       myStepper.rotate( -1 ); // Stepper dreht links
-      Serial.println(">>>>> Stepper dreht links.");
+      Serial.println(">>>>> Continuously left");
       break;
     case Aktionen::CONTR:
       myStepper.rotate( 1 ); // Stepper dreht rechts
-      Serial.println(">>>>> Stepper dreht rechts.");
+      Serial.println(">>>>> Continuously right");
       break;
     case Aktionen::STOP:
       myStepper.rotate( 0 ); // Stepper stoppt
-      Serial.println(">>>>> Stepper stoppt.");
+      Serial.println(">>>>> Stopping");
       break;
   }
   

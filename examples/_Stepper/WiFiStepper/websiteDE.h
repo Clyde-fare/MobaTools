@@ -61,18 +61,20 @@ const char HTMLTEXT[] = R"(<!DOCTYPE html>
     </head>
     <body>
         <h2>Schrittmotor bewegen</h2>
-        <h3>%s</h3>
+        <h3>MoToStepper @%s</h3>
         <form action="/stepper">
             <div class="flex-container">
-                <p class="flex-item">
+                <p class="flex-item"> 
+					<label> <b>Schrittrate</b> <br><br> </label>
                     <label>
-                    <input style="width:6em; background-color:white" max="50000" min="0" name="speed" type="number" value="%ld" onchange="updateStep(this) "/> Schritte/sec
+                    <input style="width:6em; background-color:white" max="50000" min="0" name="speed" type="number" value="%ld" onchange="updateStep(this) "/> Schritte/sec&nbsp <br> <br> 
                     </label>
                     <input name="setSpeed" type="submit" value="Geschw. setzen">
                 </p>
                 <p class="flex-item">
+					<label> <b>Rampenlänge</b> <br><br> </label>
                     <label>
-                    <input style="width:6em; background-color:white" max="160000" min="0" name="ramp" type="number" value="%ld" onchange="updateStep(this) " /> <label>Schritte</label>
+                    <input style="width:6em; background-color:white" max="160000" min="0" name="ramp" type="number" value="%ld" onchange="updateStep(this) " /> <label>Schritte&nbsp <br> <br> </label>
                     </label>
                     <input name="setRamp" type="submit" value="Rampe setzen">
                 </p>

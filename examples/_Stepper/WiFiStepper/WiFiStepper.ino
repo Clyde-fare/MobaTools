@@ -1,23 +1,15 @@
-/* MobaTools example for boards with WiFiNINA or WiFiS3 compatible chip 
-** (e.g. Nano 33 IoT, UNO WiFi Rev 2, UNO R4 Wifi )
+/* MobaTools example for boards with WiFi (except ESP32 )
+** (e.g. Nano 33 IoT, UNO WiFi Rev 2, UNO R4 Wifi, Pi Pico )
+** select website language and whether to create an own AP or to connect to an existing netork
 */
-#ifdef ARDUINO_UNOR4_WIFI
-#include <WiFiS3.h>
-#elif defined ARDUINO_RASPBERRY_PI_PICO_2W || defined ARDUINO_RASPBERRY_PI_PICO_W
-#include <WiFi.h>
-#else
-#include <WiFiNINA.h>
-#endif
-#include <MobaTools.h>  // ab 2.4.0: https://github.com/MicroBahner/MobaTools
-
 // select the language of the website
 //#include "websiteDE.h"
 #include "websiteEN.h"
 
-//#define OWN_AP // with own Wifi Network ( connects to an existing network if commented out )
+#define OWN_AP // with own Wifi Network ( connects to an existing network if commented out )
 
 #ifdef OWN_AP
-  const char *ssid = "MoToTEST";  // nsme of the Access Point, up to 32 chars
+  const char *ssid = "MoToTEST";  // name of the Access Point, up to 32 chars
   const char *pass = "12345678";  // Password, at least 8 chars, max 64
 #else                           // connect to an existing network
   #include "arduino_secrets.h"    // include your name and password here to connect to your existing WiFi
@@ -28,6 +20,17 @@
 const byte dirPin = 5; 
 const byte stepPin = 6;
 const byte enaPin = 7; 
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef ARDUINO_UNOR4_WIFI
+#include <WiFiS3.h>
+#elif defined ARDUINO_RASPBERRY_PI_PICO_2W || defined ARDUINO_RASPBERRY_PI_PICO_W
+#define IS_PI_PICO
+#include <WiFi.h>
+#else
+#include <WiFiNINA.h>
+#endif
+#include <MobaTools.h>  // ab 2.4.0: https://github.com/MicroBahner/MobaTools
 
 enum class Aktionen { STOP,
                       LINKS,
@@ -65,7 +68,7 @@ void setup() {
 
 #ifdef OWN_AP
   // -------------- creating a new network (access point) -------------
-  // by default the local IP address will be 192.168.4.1
+  // by default the local IP address will be 192.168.4.1 or 192.168.42.1 (on Pi Pico)
   // you can override it with the following:
   // WiFi.config(IPAddress(10, 0, 0, 1));
 
@@ -75,7 +78,8 @@ void setup() {
 
   // Create open network.
   status = WiFi.beginAP(ssid, pass);
-  if (status != WL_AP_LISTENING) {
+  // WL_CONNECTED is returnd by RPi, WL_AP_LISTENING at other boards
+  if ( not (status == WL_AP_LISTENING || status == WL_CONNECTED) ) {
     Serial.println("Creating access point failed");
     // don't continue
     while (true)
@@ -130,7 +134,11 @@ void loop() {
     }
   }
 
-  WiFiClient client = server.available();  // listen for incoming clients
+  #ifdef IS_PI_PICO
+    WiFiClient client = server.accept();  // listen for incoming clients
+  #else
+    WiFiClient client = server.available();  // listen for incoming clients
+  #endif
 
   if (client) {
     constexpr byte lineMax = 255;
@@ -158,15 +166,15 @@ void loop() {
 
             // the content of the HTTP response follows the header:
             #ifdef ARDUINO_BOARD
-            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp), HTMLTEXT, "MoToStepper @" ARDUINO_BOARD, htSpeed / 10, htRamp);
+            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp)+20, HTMLTEXT, ARDUINO_BOARD, htSpeed / 10, htRamp);
             #elif defined USB_PRODUCT
-            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp), HTMLTEXT, "MoToStepper @" USB_PRODUCT, htSpeed / 10, htRamp);
+            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp)+20, HTMLTEXT, USB_PRODUCT, htSpeed / 10, htRamp);
             #elif defined ARDUINO_AVR_UNO_WIFI_REV2
-            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp), HTMLTEXT, "MoToStepper @ UNO WiFi Rev2", htSpeed / 10, htRamp);
+            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp)+20, HTMLTEXT, "UNO WiFi Rev2", htSpeed / 10, htRamp);
             #elif defined ARDUINO_UNOR4_WIFI
-            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp), HTMLTEXT, "MoToStepper @ UNO R4 WiFi", htSpeed / 10, htRamp);
+            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp)+20, HTMLTEXT, "UNO R4 WiFi", htSpeed / 10, htRamp);
             #else
-            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp), HTMLTEXT, "MoToStepper @ unknown boardAP:", htSpeed / 10, htRamp);
+            int htmlSize = snprintf(htmlTemp, sizeof(htmlTemp)+20, HTMLTEXT, "unknown board", htSpeed / 10, htRamp);
             #endif
             client.print(htmlTemp);
             sprintf(txtBuf,"Html-Size = %d Byte\n\r", htmlSize); Serial.println(txtBuf);

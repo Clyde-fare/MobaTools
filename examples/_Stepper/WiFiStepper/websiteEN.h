@@ -1,6 +1,6 @@
 // HTML-Textseite
 const char HTMLTEXT[] = R"(<!DOCTYPE html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -61,20 +61,19 @@ const char HTMLTEXT[] = R"(<!DOCTYPE html>
     </head>
     <body>
         <h2>Move a stepper</h2>
-        <h3>%s</h3>
+        <h3>MoToStepper @%s</h3>
         <form action="/stepper">
             <div class="flex-container">
                 <p class="flex-item">
-                    <label> <b>Speed Values</b> <br><br> </label>
+                    <label> <b>Speed Value</b> <br><br> </label>
                     <label>
                     <input style="width:6em; background-color:white" max="50000" min="0" name="speed" type="number" value="%ld" onchange="updateStep(this) " />&nbsp steps/sec&nbsp <br> <br> 
                     </label>
                     <input name="setSpeed" type="submit" value="Set speed">
-                    <input name="setSpeedRamp" type="submit" value="Speed+autoramp">
                 </p>
                 <p class="flex-item">
                 <label> 
-                    <label> <b>Ramp Values</b> <br><br> </label>
+                    <label> <b>Ramp Value</b> <br><br> </label>
                     <input style="width:6em; background-color:white" max="160000" min="0" name="ramp" type="number" value="%ld" onchange="updateStep(this) " /> <label>&nbsp steps &nbsp<br><br></label>
                     </label>
                     <input name="setRamp" type="submit" value="Set ramp">
@@ -83,7 +82,7 @@ const char HTMLTEXT[] = R"(<!DOCTYPE html>
             <label> <h4> Let the stepper run : </h4> </label>
             <div class="flex-container">
                 <p class="flex-item">
-                <input name="links" type="submit" value="1 rev left">
+                <input name="links" type="submit" value="1 rev. left">
                 <input name="contl" type="submit" value="Cont. left">
                 </p>
                 <p class="flex-item">
