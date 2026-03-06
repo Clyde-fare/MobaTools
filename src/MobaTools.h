@@ -22,7 +22,7 @@
   MobaTools V3.0.0
    
   History:
-  V3.0 x-2026
+  V3.0 03-2026
   - Old method names (compatibility to V1 ) are no longer available
   - Synced stepper movement with acceleration
   - support of Samd21 MCU

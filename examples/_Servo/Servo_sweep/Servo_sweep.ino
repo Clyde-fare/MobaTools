@@ -31,11 +31,12 @@ void loop() {
   buttonPressed =  !digitalRead(buttonPin1); // 'ButtonPressed is 'true' if pin is LOW
 
   if (buttonPressed && not myServo.moving() ) {
+	// targetPos changes only at endpositions. If servo was stopped in between it is not changed
     if ( myServo.read() == target1 ) targetPos = target2;
-    else targetPos = target1;
+    if ( myServo.read() == target2 ) targetPos = target1;
     Serial.print("Moving Servo to "); Serial.println(targetPos);
     myServo.write(targetPos); //will move slowly
   }
 
-  if ( !buttonPressed ) myServo.write( myServo.read() );    // stop immediately
+  if ( !buttonPressed && myServo.moving() ) myServo.write( myServo.read() );    // stop immediately
 }

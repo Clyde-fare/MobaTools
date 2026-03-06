@@ -28,7 +28,7 @@ void IRAM_ATTR ISR_Servo( void *arg ) {
     SET_TP2;
     if ( _servoData->ist != _servoData->soll ) {
         //SET_TP1;
-        _servoData->offcnt = 50;
+        _servoData->offcnt = OFF_COUNT;
         if ( _servoData->ist > _servoData->soll ) {
             _servoData->ist -= _servoData->inc;
             if ( _servoData->ist < _servoData->soll ) _servoData->ist = _servoData->soll;
@@ -68,7 +68,7 @@ void IRAM_ATTR ISR_Servo( void *arg ) {
       thisSlice = sPtr->pwmNbr >> 1;
       // got one for this slice
       if ( sPtr->ist != sPtr->soll ) {
-        sPtr->offcnt = 50;
+        sPtr->offcnt = OFF_COUNT;
         // servo is not at target position
         if ( sPtr->ist > sPtr->soll ) {
           sPtr->ist -= sPtr->inc;
