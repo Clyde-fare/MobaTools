@@ -24,7 +24,7 @@ void setup() {
   pinMode(buttonPin1, INPUT_PULLUP);
 
   myServo.attach(servoPin);
-  myServo.setSpeedTime( 500 );    // set speed of servo
+  myServo.setSpeedTime( 800 );    // set speed of servo
 }
 
 void loop() {
@@ -32,11 +32,17 @@ void loop() {
 
   if (buttonPressed && not myServo.moving() ) {
 	// targetPos changes only at endpositions. If servo was stopped in between it is not changed
-    if ( myServo.read() == target1 ) targetPos = target2;
-    if ( myServo.read() == target2 ) targetPos = target1;
+    if ( myServo.read() == target1 ) {
+		targetPos = target2; 
+		myServo.autoOff();			// autooff only when stopping while the pulselength increases
+	}
+    if ( myServo.read() == target2 ) {
+		targetPos = target1;
+		myServo.autoOff(false);		// no autooff when stopping while the pulselength decreases
+	}
     Serial.print("Moving Servo to "); Serial.println(targetPos);
     myServo.write(targetPos); //will move slowly
   }
 
-  if ( !buttonPressed && myServo.moving() ) myServo.write( myServo.read() );    // stop immediately
+  if ( !buttonPressed && myServo.moving() ) myServo.stop();    // stop immediately
 }

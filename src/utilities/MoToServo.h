@@ -114,6 +114,8 @@ class MoToServo
     uint8_t read();          // current position in degrees (0...180)
     uint16_t  readMicroseconds();// current pulsewidth in microseconds
     uint8_t attached();
+	void stop();				// immediate stop of servo
+	void autoOff( bool = true );	// set/reset autooff-functionality
     void setMinimumPulse(uint16_t);  // pulse length for 0 degrees in microseconds, 700uS default
     void setMaximumPulse(uint16_t);  // pulse length for 180 degrees in microseconds, 2300uS default
 	

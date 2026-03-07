@@ -429,6 +429,12 @@ uint8_t MoToServo::attach( byte pinArg, uint16_t pmin, uint16_t pmax, bool autoO
     return ( _servoData.pwmNbr +1 );
 }
 
+void MoToServo::autoOff(bool autoOff) {
+	// set/reset autoOff functionality
+    _servoData.noAutoff = autoOff?0:1 ;  
+}
+
+
 void MoToServo::detach()
 {
     if ( _servoData.pwmNbr == NOT_ATTACHED ) return; // only if servo is attached
@@ -519,6 +525,13 @@ void MoToServo::write(uint16_t angleArg)
     //CLR_TP1;
 }
 #pragma GCC diagnostic pop
+
+void MoToServo::stop() {
+	// immediate stop of the servo: set current position to target position
+    noInterrupts();
+    _servoData.soll = _servoData.ist;
+    interrupts();
+}
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
