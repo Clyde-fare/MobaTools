@@ -29,7 +29,7 @@ A documentation file in [german](https://github.com/MicroBahner/MobaTools/blob/m
 
 | Version |  Release Date  | Description
 | ------- |  ------------  | -----------
-| 3.0.0 | 2026-xx-xx| 
+| 3.0.0 | 2026-03-07| 
 | | | old classnames from V1.x are no longer valid
 | | | Support of SamD21 MCU (MKR-Series, Nano 33 Iot ...)
 | | | Support of Arduino Nano ESP32 (ESP32S3) and variants(C3,S3,S2)
