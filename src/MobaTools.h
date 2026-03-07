@@ -26,10 +26,12 @@
   - Old method names (compatibility to V1 ) are no longer available
   - Synced stepper movement with acceleration
   - support of Samd21 MCU
-  - support of Arduino Nano ESP32
+  - support of Arduino Nano ESP32 and ESP S2/S3/C6/C3 series
   - support of LGT8F328 with 32MHz
+  - support of ATtiny2 ( limited, only tested with ATtiny3224)
   - stepper pins can be inverted
-  V2.7.1 x-2025
+  - some minor enhancements and new functions
+  V2.7.1 x-2025( not released)
 	- RP204 processers: priority of timer IRQ can be set in MobaTools.h
   V2.7.0 3-2025
     - New class for synced move of steppers ( without acceleration )
@@ -88,7 +90,8 @@
 	//#define MIN_STEP_CYCLE 20       // Minimum number of µsec  per Step
 	//#define USE_SPI1				// if SPI 1 for SPI-Stepper should be used ( not possible on nano RP2040 )
 	//#define STP_TIMR_NBR 1        // use Timer 1 - only possible at RP2350 ( Pico 2 )
-
+	//#define IRQ_PRIO 64			// NVIC priority of timer IRQ (64 is default)
+	
 /////////////////////// ESP32, ESP32S3 (Nano ESP32 ) and other derivatives (S2,C3,C6) ... //////////////////
 #elif defined ARDUINO_ARCH_ESP32 
 	//#define USE_VSPI              // default is HSPI ( for SPI-Stepper )

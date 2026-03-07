@@ -27,7 +27,8 @@ detach	KEYWORD2
 write	KEYWORD2
 read	KEYWORD2
 readMicroseconds	KEYWORD2
-read	KEYWORD2
+stop	KEYWORD2
+autoOff	KEYWORD2
 setSpeed	KEYWORD2
 setSpeedTime	KEYWORD2
 moving	KEYWORD2

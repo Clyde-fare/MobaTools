@@ -20,10 +20,10 @@ Released versions can be installed by means of the library manager in arduino ID
 - RP2040 / RP2350 processors ( the [core of Earle Philhower](https://github.com/earlephilhower/arduino-pico) must be used )
 - STM32F103x processors ( the [core of Roger Clark](https://github.com/rogerclarkmelbourne/Arduino_STM32) must be used )
 - ESP32 ( core versions 2.x and 3.x )
-- ESP32S3 ( Arduino Nano ESP32 ) and other variants (C3,S3,S2)
+- ESP32S3 ( Arduino Nano ESP32 ) and other variants (C3,C6,S3,S2)
 - ESP8266 ( with some restrictions )
 
-A documentation file in [german](https://github.com/MicroBahner/MobaTools/blob/master-V3beta/MobaTools-300-de.pdf) and [english](https://github.com/MicroBahner/MobaTools/blob/master-V3beta/MobaTools-300-en.pdf) is provided.
+A documentation file in [german](https://github.com/MicroBahner/MobaTools/blob/master/MobaTools-300-de.pdf) and [english](https://github.com/MicroBahner/MobaTools/blob/master/MobaTools-300-en.pdf) is provided.
 
 **Latest changes:**
 

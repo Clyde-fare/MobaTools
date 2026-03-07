@@ -3,10 +3,12 @@
   - Old method names (compatibility to V1 ) are no longer available
   - Synced stepper movement with acceleration
   - support of Samd21 MCU
-  - support of Arduino Nano ESP32
+  - support of Arduino Nano ESP32 and ESP S2/S3/C6/C3 series
   - support of LGT8F328 with 32MHz
+  - support of ATtiny2 ( limited, only tested with ATtiny3224)
   - stepper pins can be inverted
-  V2.7.1 x-2025
+  - some minor enhancements and new functions
+  V2.7.1 x-2025( not released)
 	- RP204 processers: priority of timer IRQ can be set in MobaTools.h
   V2.7.0 3-2025
     - New class for synced move of steppers ( without acceleration )

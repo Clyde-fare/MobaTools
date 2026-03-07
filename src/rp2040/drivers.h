@@ -39,7 +39,10 @@
 #ifndef MIN_STEP_CYCLE
 	#define MIN_STEP_CYCLE 20       // Minimum number of µsec  per Step
 #endif
+
+#ifndef IRQ_PRIO				// maybe set in MobaTools.h
 #define IRQ_PRIO 64				// NVIC priority of timer IRQ ( stepper&softleds) - 128 is default for SDK
+#endif
 								// lower value = higher priority
 #define SPI_CLOCK 2000000L
 #define TICS_PER_MICROSECOND 1 // RP2040 timer is clocked with 1MHz
