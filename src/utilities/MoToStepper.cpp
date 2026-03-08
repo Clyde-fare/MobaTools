@@ -105,6 +105,7 @@ void MoToStepper::initialize ( long steps360, uint8_t mode ) {
     _stepperData.lastStepCount = 0;
     _stepperData.lastStepTick = 0;
     _stepperData.lastStepDeltaTicks = 0;
+    _stepperData.lastStepPrevDeltaTicks = 0;
     _stepperData.rampState = rampStat::INACTIVE;
     _stepperData.syncMode = syncStat::NOSYNC;		// default ist no sync mode active
     _stepperData.stepRampLen             = 0;       // initialize with no acceleration  
@@ -141,9 +142,11 @@ bool MoToStepper::getLastStepInfo(MoToStepInfo &out) { //#######################
     out.stepCount = _stepperData.lastStepCount;
     out.stepTimeTicks = _stepperData.lastStepTick;
     out.stepDeltaTicks = _stepperData.lastStepDeltaTicks;
+    out.stepPrevDeltaTicks = _stepperData.lastStepPrevDeltaTicks;
     _stepIRQ();
     out.stepTimeUs = MOTO_STEP_TICKS_TO_US(out.stepTimeTicks);
     out.stepDeltaUs = MOTO_STEP_TICKS_TO_US(out.stepDeltaTicks);
+    out.stepPrevDeltaUs = MOTO_STEP_TICKS_TO_US(out.stepPrevDeltaTicks);
     return out.stepTimeTicks != 0;
 }
 

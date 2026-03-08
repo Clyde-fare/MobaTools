@@ -184,7 +184,12 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					#endif
 					nowTick = MOTO_STEP_TICK_NOW();
 					prevStepTick = stepperDataP->lastStepTick;
-					stepperDataP->lastStepDeltaTicks = ( prevStepTick == 0 ? 0 : (uint16_t)(nowTick - prevStepTick) );
+					if ( prevStepTick != 0 ) {
+						stepperDataP->lastStepPrevDeltaTicks = stepperDataP->lastStepDeltaTicks;
+						stepperDataP->lastStepDeltaTicks = (uint16_t)(nowTick - prevStepTick);
+					} else {
+						stepperDataP->lastStepDeltaTicks = 0;
+					}
 					stepperDataP->lastStepTick = nowTick;
 					stepperDataP->lastStepCount = stepperDataP->stepsFromZero;
 					stepperWrite( stepperDataP, 0, 1 );

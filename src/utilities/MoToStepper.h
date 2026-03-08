@@ -145,6 +145,7 @@ typedef struct stepperData_t {
   volatile int32_t lastStepCount;      // last emitted step count (stepdir mode)
   volatile uint16_t lastStepTick;      // raw timer tick (RA4M1: GTCNT modulo 16-bit)
   volatile uint16_t lastStepDeltaTicks;// wrap-safe delta between consecutive step ticks
+  volatile uint16_t lastStepPrevDeltaTicks; // delta for step before last (for acceleration)
   // bit-coded byte:/attach
   uint8_t output  :5 ;          //SPI_1,SPI_2,SPI_3, SPI_4, SINGLE_PINS2, SINGLE_PINS4, STEPDIR_PINS
   uint8_t delayActiv :1;        // enable delaytime is running
@@ -178,8 +179,10 @@ typedef struct {
   int32_t stepCount;
   uint16_t stepTimeTicks;
   uint16_t stepDeltaTicks;
+  uint16_t stepPrevDeltaTicks;  // delta for step before last (for acceleration)
   uint32_t stepTimeUs;
   uint32_t stepDeltaUs;
+  uint32_t stepPrevDeltaUs;
 } MoToStepInfo;
 
 constexpr uint8_t invMsk[] = {INV_PIN1,INV_PIN2,INV_PIN3,INV_PIN4};  // Mask to invert the output-Pins
