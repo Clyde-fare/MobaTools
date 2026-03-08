@@ -102,6 +102,9 @@ void MoToStepper::initialize ( long steps360, uint8_t mode ) {
 	    _stepperData.tCycRemain = 0;                // work with remainder when cruising ( only 8-bit processors )
 	#endif
     _stepperData.stepsFromZero = 0;
+    _stepperData.lastStepCount = 0;
+    _stepperData.lastStepTick = 0;
+    _stepperData.lastStepDeltaTicks = 0;
     _stepperData.rampState = rampStat::INACTIVE;
     _stepperData.syncMode = syncStat::NOSYNC;		// default ist no sync mode active
     _stepperData.stepRampLen             = 0;       // initialize with no acceleration  
@@ -131,6 +134,17 @@ long MoToStepper::getSFZ() { //#################################################
     //digitalWrite(16,1);
     // in STEPDIR mode there is no difference between half/fullstep in counting steps
     return ( stepMode==STEPDIR?lastSFZ:lastSFZ / stepMode);
+}
+
+bool MoToStepper::getLastStepInfo(MoToStepInfo &out) { //####################################
+    _noStepIRQ();
+    out.stepCount = _stepperData.lastStepCount;
+    out.stepTimeTicks = _stepperData.lastStepTick;
+    out.stepDeltaTicks = _stepperData.lastStepDeltaTicks;
+    _stepIRQ();
+    out.stepTimeUs = MOTO_STEP_TICKS_TO_US(out.stepTimeTicks);
+    out.stepDeltaUs = MOTO_STEP_TICKS_TO_US(out.stepDeltaTicks);
+    return out.stepTimeTicks != 0;
 }
 
 bool MoToStepper::_chkRunning() { // #########################################################

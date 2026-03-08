@@ -142,6 +142,9 @@ typedef struct stepperData_t {
   rampStat rampState;        	// State of stepper: stopped, cruising, acceleration/deceleration ...
   volatile long stepsFromZero;  // distance from last reference point ( always as steps in HALFSTEP mode )
                                 // in FULLSTEP mode this is twice the real step number
+  volatile int32_t lastStepCount;      // last emitted step count (stepdir mode)
+  volatile uint16_t lastStepTick;      // raw timer tick (RA4M1: GTCNT modulo 16-bit)
+  volatile uint16_t lastStepDeltaTicks;// wrap-safe delta between consecutive step ticks
   // bit-coded byte:/attach
   uint8_t output  :5 ;          //SPI_1,SPI_2,SPI_3, SPI_4, SINGLE_PINS2, SINGLE_PINS4, STEPDIR_PINS
   uint8_t delayActiv :1;        // enable delaytime is running
@@ -170,6 +173,14 @@ typedef struct stepperData_t {
   uint8_t reserved :3;
   uint8_t stepActive:1;			// step is active ( to know when we must reset it ) 
 } stepperData_t ;
+
+typedef struct {
+  int32_t stepCount;
+  uint16_t stepTimeTicks;
+  uint16_t stepDeltaTicks;
+  uint32_t stepTimeUs;
+  uint32_t stepDeltaUs;
+} MoToStepInfo;
 
 constexpr uint8_t invMsk[] = {INV_PIN1,INV_PIN2,INV_PIN3,INV_PIN4};  // Mask to invert the output-Pins
 
@@ -251,6 +262,7 @@ class MoToStepper
     uintxx_t setSpeedSteps( uintxx_t speed10, intxx_t rampLen ); // set speed and ramp, returns ramp length
     uintxx_t setRampLen( uintxx_t rampLen ); // set new ramplen in steps without changing speed
     int32_t getSpeedSteps();		// returns actual speed in steps/10sec ( even in ramp )
+    bool getLastStepInfo(MoToStepInfo &out); // last emitted step pulse telemetry
     void doSteps(long count);       // rotate count steps. May be positive or negative
                                     // angle is updated internally, so the next call to 'write'
                                     // will move to the correct angle

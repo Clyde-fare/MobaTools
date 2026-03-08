@@ -181,6 +181,11 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					#else
 						stepSet = 1;
 					#endif
+					uint16_t nowTick = MOTO_STEP_TICK_NOW();
+					uint16_t prevStepTick = stepperDataP->lastStepTick;
+					stepperDataP->lastStepDeltaTicks = ( prevStepTick == 0 ? 0 : (uint16_t)(nowTick - prevStepTick) );
+					stepperDataP->lastStepTick = nowTick;
+					stepperDataP->lastStepCount = stepperDataP->stepsFromZero;
 					stepperWrite( stepperDataP, 0, 1 );
 					stepperDataP->stepActive = 1;
 					stepperDataP->patternIx = 0; // changed to 1 later, if a dir-change is due

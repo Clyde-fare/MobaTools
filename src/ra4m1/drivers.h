@@ -23,6 +23,8 @@
 //#define TICS_PER_MICROSECOND 3 // prescaler is 16 = with 48MHz Clock
 
 #define GET_COUNT (uint32_t)gptRegP->GTCNT
+#define MOTO_STEP_TICK_NOW() ((uint16_t)GET_COUNT)
+#define MOTO_STEP_TICKS_TO_US(ticks) ((uint32_t)(ticks) / TICS_PER_MICROSECOND)
 
 
 extern bool timerInitialized;

@@ -54,6 +54,14 @@
 // Calling compatible architecture specific functions.
 // These functions are defined in architecture specific files, but can be called independend from actual architecture
 
+#ifndef MOTO_STEP_TICK_NOW
+	#define MOTO_STEP_TICK_NOW() ((uint16_t)micros())
+#endif
+
+#ifndef MOTO_STEP_TICKS_TO_US
+	#define MOTO_STEP_TICKS_TO_US(ticks) ((uint32_t)(ticks))
+#endif
+
 // type definitions for the Servo class.
 #ifndef servoPos_t
 	// special definitions ( e.g. for special PWM HW ) are defined in MCU specific drivers.h
