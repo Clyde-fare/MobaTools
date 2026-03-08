@@ -63,6 +63,7 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
     stepperData_t *stepperDataP;         // actual stepper data in IRQ
 	stepperSyncData_t *locSyncDataP;	 // Data for synchronous move ( =NULL if no sync move active )
     uint8_t spiChanged, changedPins, bitNr;
+    uint16_t nowTick, prevStepTick;      // step telemetry (STEPDIR_PINS only)
 	#if FAST_STEPRESET != 0 // Steppin is reset in same IRO as set
 	uint8_t stepSet;	// >0 if a step pin was set ( only used with STEP_RESET
 	#endif
@@ -181,8 +182,8 @@ void IRAM_ATTR stepperISR(nextCycle_t cyclesLastIRQ) {
 					#else
 						stepSet = 1;
 					#endif
-					uint16_t nowTick = MOTO_STEP_TICK_NOW();
-					uint16_t prevStepTick = stepperDataP->lastStepTick;
+					nowTick = MOTO_STEP_TICK_NOW();
+					prevStepTick = stepperDataP->lastStepTick;
 					stepperDataP->lastStepDeltaTicks = ( prevStepTick == 0 ? 0 : (uint16_t)(nowTick - prevStepTick) );
 					stepperDataP->lastStepTick = nowTick;
 					stepperDataP->lastStepCount = stepperDataP->stepsFromZero;
